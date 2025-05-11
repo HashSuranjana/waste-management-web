@@ -1,0 +1,149 @@
+.register-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #F5F5F5;
+    padding: 20px;
+}
+
+.register-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(51, 51, 51, 0.1);
+    width: 100%;
+    max-width: 500px;
+}
+
+.register-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.register-header h1 {
+    color: #333333;
+    margin-bottom: 0.5rem;
+    font-size: 1.8rem;
+}
+
+.register-header p {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.user-type-selector {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.type-button {
+    flex: 1;
+    padding: 1rem;
+    border: 2px solid #00B14F;
+    border-radius: 5px;
+    background: white;
+    color: #00B14F;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.type-button.active {
+    background: #00B14F;
+    color: white;
+}
+
+.type-button:hover {
+    background: #007D3C;
+    border-color: #007D3C;
+    color: white;
+}
+
+.register-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    color: #333333;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #00B14F;
+}
+
+.register-button {
+    background-color: #00B14F;
+    color: white;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 1rem;
+}
+
+.register-button:hover {
+    background-color: #007D3C;
+}
+
+.register-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: #333333;
+}
+
+.register-footer a {
+    color: #00B14F;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.register-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .register-card {
+        padding: 1.5rem;
+    }
+
+    .user-type-selector {
+        flex-direction: column;
+    }
+
+    .type-button {
+        width: 100%;
+    }
+}
