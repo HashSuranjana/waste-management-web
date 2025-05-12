@@ -6,9 +6,12 @@
  * tracking recycled materials, and monitoring recycling statistics.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import './RecyclingCenterHome.css';
 import useAuth from "../hooks/use-auth.js";
+import {db} from "../config/firebase-config.js";
+import {collection} from "firebase/firestore";
+import {addBulkMaterial, fetchBulkMaterials} from "../utils/bulk-collection.js";
 
 /**
  * RecyclingCenterHome Component
@@ -126,148 +129,6 @@ const RecyclingCenterHome = () => {
         { id: 9, location: '369 Spruce Rd', date: '2024-03-17', time: '11:00 AM', material: 'Metal' },
         { id: 10, location: '741 Fir Dr', date: '2024-03-18', time: '09:30 AM', material: 'Glass' },
     ];
-
-    /**
-     * Recycling Process Data
-     * 
-     * Mock data for the recycling process steps and current status.
-     * Each process has multiple stages with tracking information.
-     */
-    const recyclingProcesses = [
-        {
-            id: 1,
-            material: 'Plastic',
-            batchId: 'PL-2024-001',
-            startDate: '2024-03-10',
-            currentStage: 'Sorting',
-            stages: [
-                { name: 'Collection', status: 'Completed', date: '2024-03-10', notes: 'Collected from 5 locations' },
-                { name: 'Sorting', status: 'In Progress', date: '2024-03-11', notes: 'Separating by type and color' },
-                { name: 'Cleaning', status: 'Pending', date: null, notes: null },
-                { name: 'Shredding', status: 'Pending', date: null, notes: null },
-                { name: 'Pelletization', status: 'Pending', date: null, notes: null },
-                { name: 'Quality Check', status: 'Pending', date: null, notes: null },
-                { name: 'Packaging', status: 'Pending', date: null, notes: null }
-            ],
-            estimatedCompletion: '2024-03-18',
-            assignedStaff: 'John Smith, Maria Garcia',
-            equipment: 'Sorting Line A, Conveyor Belt 2'
-        },
-        {
-            id: 2,
-            material: 'Paper',
-            batchId: 'PP-2024-003',
-            startDate: '2024-03-12',
-            currentStage: 'Pulping',
-            stages: [
-                { name: 'Collection', status: 'Completed', date: '2024-03-12', notes: 'Collected from 3 locations' },
-                { name: 'Sorting', status: 'Completed', date: '2024-03-13', notes: 'Separated by grade' },
-                { name: 'Pulping', status: 'In Progress', date: '2024-03-14', notes: 'Using chemical pulping method' },
-                { name: 'Screening', status: 'Pending', date: null, notes: null },
-                { name: 'Deinking', status: 'Pending', date: null, notes: null },
-                { name: 'Refining', status: 'Pending', date: null, notes: null },
-                { name: 'Paper Making', status: 'Pending', date: null, notes: null },
-                { name: 'Drying', status: 'Pending', date: null, notes: null },
-                { name: 'Rolling', status: 'Pending', date: null, notes: null }
-            ],
-            estimatedCompletion: '2024-03-20',
-            assignedStaff: 'David Chen, Sarah Johnson',
-            equipment: 'Pulper 1, Paper Machine B'
-        },
-        {
-            id: 3,
-            material: 'Glass',
-            batchId: 'GL-2024-002',
-            startDate: '2024-03-11',
-            currentStage: 'Cleaning',
-            stages: [
-                { name: 'Collection', status: 'Completed', date: '2024-03-11', notes: 'Collected from 4 locations' },
-                { name: 'Sorting', status: 'Completed', date: '2024-03-12', notes: 'Separated by color' },
-                { name: 'Cleaning', status: 'In Progress', date: '2024-03-13', notes: 'Removing labels and contaminants' },
-                { name: 'Crushing', status: 'Pending', date: null, notes: null },
-                { name: 'Melting', status: 'Pending', date: null, notes: null },
-                { name: 'Molding', status: 'Pending', date: null, notes: null },
-                { name: 'Annealing', status: 'Pending', date: null, notes: null },
-                { name: 'Quality Inspection', status: 'Pending', date: null, notes: null }
-            ],
-            estimatedCompletion: '2024-03-19',
-            assignedStaff: 'Michael Brown, Lisa Wong',
-            equipment: 'Glass Crusher, Furnace 3'
-        },
-        {
-            id: 4,
-            material: 'Metal',
-            batchId: 'MT-2024-004',
-            startDate: '2024-03-13',
-            currentStage: 'Collection',
-            stages: [
-                { name: 'Collection', status: 'In Progress', date: '2024-03-13', notes: 'Collecting from 6 locations' },
-                { name: 'Sorting', status: 'Pending', date: null, notes: null },
-                { name: 'Shredding', status: 'Pending', date: null, notes: null },
-                { name: 'Magnetic Separation', status: 'Pending', date: null, notes: null },
-                { name: 'Melting', status: 'Pending', date: null, notes: null },
-                { name: 'Purification', status: 'Pending', date: null, notes: null },
-                { name: 'Solidification', status: 'Pending', date: null, notes: null },
-                { name: 'Quality Testing', status: 'Pending', date: null, notes: null }
-            ],
-            estimatedCompletion: '2024-03-22',
-            assignedStaff: 'Robert Wilson, Emily Davis',
-            equipment: 'Metal Shredder, Furnace 1'
-        }
-    ];
-
-    /**
-     * Schedule Data
-     * 
-     * Mock data for the recycling center's schedule.
-     * Includes collection schedules, processing schedules, and staff assignments.
-     */
-    const scheduleData = {
-        // Collection schedules
-        collections: [
-            { id: 1, type: 'Collection', title: 'Plastic Collection - Route A', date: '2024-03-16', startTime: '08:00 AM', endTime: '12:00 PM', location: 'Downtown Area', assignedTo: 'John Smith, Maria Garcia', vehicle: 'Truck A-123', status: 'Scheduled' },
-            { id: 2, type: 'Collection', title: 'Paper Collection - Route B', date: '2024-03-16', startTime: '09:00 AM', endTime: '01:00 PM', location: 'Suburban Area', assignedTo: 'David Chen, Sarah Johnson', vehicle: 'Truck B-456', status: 'Scheduled' },
-            { id: 3, type: 'Collection', title: 'Glass Collection - Route C', date: '2024-03-17', startTime: '08:30 AM', endTime: '11:30 AM', location: 'Industrial Area', assignedTo: 'Michael Brown, Lisa Wong', vehicle: 'Truck C-789', status: 'Scheduled' },
-            { id: 4, type: 'Collection', title: 'Metal Collection - Route D', date: '2024-03-17', startTime: '10:00 AM', endTime: '02:00 PM', location: 'Commercial Area', assignedTo: 'Robert Wilson, Emily Davis', vehicle: 'Truck D-012', status: 'Scheduled' },
-            { id: 5, type: 'Collection', title: 'Mixed Recycling - Route E', date: '2024-03-18', startTime: '09:30 AM', endTime: '01:30 PM', location: 'Residential Area', assignedTo: 'John Smith, Maria Garcia', vehicle: 'Truck E-345', status: 'Scheduled' },
-        ],
-
-        // Processing schedules
-        processing: [
-            { id: 6, type: 'Processing', title: 'Plastic Sorting - Batch PL-2024-001', date: '2024-03-16', startTime: '01:00 PM', endTime: '05:00 PM', location: 'Sorting Facility', assignedTo: 'John Smith, Maria Garcia', equipment: 'Sorting Line A', status: 'Scheduled' },
-            { id: 7, type: 'Processing', title: 'Paper Pulping - Batch PP-2024-003', date: '2024-03-16', startTime: '02:00 PM', endTime: '06:00 PM', location: 'Processing Plant', assignedTo: 'David Chen, Sarah Johnson', equipment: 'Pulper 1', status: 'Scheduled' },
-            { id: 8, type: 'Processing', title: 'Glass Cleaning - Batch GL-2024-002', date: '2024-03-17', startTime: '01:30 PM', endTime: '04:30 PM', location: 'Cleaning Station', assignedTo: 'Michael Brown, Lisa Wong', equipment: 'Cleaning Unit 2', status: 'Scheduled' },
-            { id: 9, type: 'Processing', title: 'Metal Shredding - Batch MT-2024-004', date: '2024-03-18', startTime: '09:00 AM', endTime: '12:00 PM', location: 'Shredding Facility', assignedTo: 'Robert Wilson, Emily Davis', equipment: 'Metal Shredder', status: 'Scheduled' },
-            { id: 10, type: 'Processing', title: 'Quality Inspection - All Materials', date: '2024-03-19', startTime: '10:00 AM', endTime: '03:00 PM', location: 'Quality Lab', assignedTo: 'Quality Team', equipment: 'Testing Equipment', status: 'Scheduled' },
-        ],
-
-        // Staff schedules
-        staff: [
-            { id: 11, type: 'Staff', title: 'John Smith', date: '2024-03-16', startTime: '08:00 AM', endTime: '05:00 PM', role: 'Collection Driver', location: 'Various Locations', status: 'Scheduled' },
-            { id: 12, type: 'Staff', title: 'Maria Garcia', date: '2024-03-16', startTime: '08:00 AM', endTime: '05:00 PM', role: 'Collection Assistant', location: 'Various Locations', status: 'Scheduled' },
-            { id: 13, type: 'Staff', title: 'David Chen', date: '2024-03-16', startTime: '09:00 AM', endTime: '06:00 PM', role: 'Processing Operator', location: 'Processing Plant', status: 'Scheduled' },
-            { id: 14, type: 'Staff', title: 'Sarah Johnson', date: '2024-03-16', startTime: '09:00 AM', endTime: '06:00 PM', role: 'Processing Assistant', location: 'Processing Plant', status: 'Scheduled' },
-            { id: 15, type: 'Staff', title: 'Michael Brown', date: '2024-03-17', startTime: '08:30 AM', endTime: '04:30 PM', role: 'Glass Processing Specialist', location: 'Glass Processing Area', status: 'Scheduled' },
-            { id: 16, type: 'Staff', title: 'Lisa Wong', date: '2024-03-17', startTime: '08:30 AM', endTime: '04:30 PM', role: 'Glass Processing Assistant', location: 'Glass Processing Area', status: 'Scheduled' },
-            { id: 17, type: 'Staff', title: 'Robert Wilson', date: '2024-03-18', startTime: '09:00 AM', endTime: '05:00 PM', role: 'Metal Processing Specialist', location: 'Metal Processing Area', status: 'Scheduled' },
-            { id: 18, type: 'Staff', title: 'Emily Davis', date: '2024-03-18', startTime: '09:00 AM', endTime: '05:00 PM', role: 'Metal Processing Assistant', location: 'Metal Processing Area', status: 'Scheduled' },
-            { id: 19, type: 'Staff', title: 'Quality Team', date: '2024-03-19', startTime: '10:00 AM', endTime: '03:00 PM', role: 'Quality Inspectors', location: 'Quality Lab', status: 'Scheduled' },
-        ],
-
-        // Equipment schedules
-        equipment: [
-            { id: 20, type: 'Equipment', title: 'Truck A-123', date: '2024-03-16', startTime: '08:00 AM', endTime: '12:00 PM', purpose: 'Plastic Collection', assignedTo: 'John Smith, Maria Garcia', status: 'Scheduled' },
-            { id: 21, type: 'Equipment', title: 'Truck B-456', date: '2024-03-16', startTime: '09:00 AM', endTime: '01:00 PM', purpose: 'Paper Collection', assignedTo: 'David Chen, Sarah Johnson', status: 'Scheduled' },
-            { id: 22, type: 'Equipment', title: 'Truck C-789', date: '2024-03-17', startTime: '08:30 AM', endTime: '11:30 AM', purpose: 'Glass Collection', assignedTo: 'Michael Brown, Lisa Wong', status: 'Scheduled' },
-            { id: 23, type: 'Equipment', title: 'Truck D-012', date: '2024-03-17', startTime: '10:00 AM', endTime: '02:00 PM', purpose: 'Metal Collection', assignedTo: 'Robert Wilson, Emily Davis', status: 'Scheduled' },
-            { id: 24, type: 'Equipment', title: 'Truck E-345', date: '2024-03-18', startTime: '09:30 AM', endTime: '01:30 PM', purpose: 'Mixed Recycling Collection', assignedTo: 'John Smith, Maria Garcia', status: 'Scheduled' },
-            { id: 25, type: 'Equipment', title: 'Sorting Line A', date: '2024-03-16', startTime: '01:00 PM', endTime: '05:00 PM', purpose: 'Plastic Sorting', assignedTo: 'John Smith, Maria Garcia', status: 'Scheduled' },
-            { id: 26, type: 'Equipment', title: 'Pulper 1', date: '2024-03-16', startTime: '02:00 PM', endTime: '06:00 PM', purpose: 'Paper Pulping', assignedTo: 'David Chen, Sarah Johnson', status: 'Scheduled' },
-            { id: 27, type: 'Equipment', title: 'Cleaning Unit 2', date: '2024-03-17', startTime: '01:30 PM', endTime: '04:30 PM', purpose: 'Glass Cleaning', assignedTo: 'Michael Brown, Lisa Wong', status: 'Scheduled' },
-            { id: 28, type: 'Equipment', title: 'Metal Shredder', date: '2024-03-18', startTime: '09:00 AM', endTime: '12:00 PM', purpose: 'Metal Shredding', assignedTo: 'Robert Wilson, Emily Davis', status: 'Scheduled' },
-            { id: 29, type: 'Equipment', title: 'Testing Equipment', date: '2024-03-19', startTime: '10:00 AM', endTime: '03:00 PM', purpose: 'Quality Inspection', assignedTo: 'Quality Team', status: 'Scheduled' },
-        ]
-    };
 
     // Mock data for recycling materials
     const recyclingMaterials = [
@@ -403,59 +264,30 @@ const RecyclingCenterHome = () => {
         }));
     };
 
-    const handleNewBulkSubmit = (e) => {
-        e.preventDefault();
+    const handleNewBulkSubmit = async () => {
+        try {
+            await addBulkMaterial(newBulkData);
+            setShowNewBulkModal(false)
+            alert('New recycling bulk added successfully!');
+        }catch (error) {
+            console.error('Error adding bulk material:', error);
+        }
 
-        // Create a new bulk entry
-        const newBulk = {
-            id: recyclingMaterials.length + 1,
-            name: newBulkData.name,
-            type: newBulkData.type,
-            quantity: `${newBulkData.quantity} kg`,
-            status: 'Pending',
-            lastUpdated: new Date().toISOString().split('T')[0],
-            description: newBulkData.description,
-            processingStatus: {
-                currentStep: 'Collection',
-                steps: [
-                    { id: 'Collection', status: 'pending', startTime: null, endTime: null },
-                    { id: 'Sorting', status: 'pending', startTime: null, endTime: null },
-                    { id: 'Cleaning', status: 'pending', startTime: null, endTime: null },
-                    { id: 'Processing', status: 'pending', startTime: null, endTime: null },
-                    { id: 'Quality Check', status: 'pending', startTime: null, endTime: null },
-                    { id: 'Packaging', status: 'pending', startTime: null, endTime: null }
-                ]
-            }
-        };
-
-        // Add the new bulk to the materials list
-        setRecyclingMaterials(prev => [...prev, newBulk]);
-
-        // Reset the form
-        setNewBulkData({
-            name: '',
-            type: '',
-            quantity: '',
-            description: ''
-        });
-
-        // Close the modal
-        setShowNewBulkModal(false);
-
-        // Show success message (you can implement a toast or notification system)
-        alert('New recycling bulk added successfully!');
     };
+
+    useEffect(() => {
+        const loadBulks = async () => {
+            fetchBulkMaterials();
+            set
+        }
+        loadBulks()
+    }, []);
 
     const { handleLogout, loading } = useAuth();
 
     const onLogout = async () => {
-        const result = await handleLogout();
-        if (result.success) {
-            alert('Successfully logged out!'); // Replace with toast notification
-        } else {
-            alert(result.error); // Replace with error toast
-        }
-    };
+        await handleLogout();
+    }
 
     /**
      * Component Render
@@ -639,7 +471,7 @@ const RecyclingCenterHome = () => {
                                 <div className="modal-overlay">
                                     <div className="modal-content">
                                         <h3>Add New Recycling Bulk</h3>
-                                        <form onSubmit={handleNewBulkSubmit}>
+                                        <div>
                                             <div className="form-group">
                                                 <label htmlFor="name">Material Name</label>
                                                 <input
@@ -691,7 +523,7 @@ const RecyclingCenterHome = () => {
                                                 />
                                             </div>
                                             <div className="modal-actions">
-                                                <button type="submit" className="btn-primary">Add Bulk</button>
+                                                <button className="btn-primary" onClick={() =>handleNewBulkSubmit(newBulkData)}>Add Bulk</button>
                                                 <button
                                                     type="button"
                                                     className="btn-secondary"
@@ -700,7 +532,7 @@ const RecyclingCenterHome = () => {
                                                     Cancel
                                                 </button>
                                             </div>
-                                        </form>
+                                        </div>
                                     </div>
                                 </div>
                             )}
