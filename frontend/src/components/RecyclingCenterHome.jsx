@@ -1,23 +1,8 @@
-/**
- * RecyclingCenterHome Component
- * 
- * This component serves as the main dashboard for the recycling center.
- * It provides a comprehensive interface for managing recycling operations,
- * tracking recycled materials, and monitoring recycling statistics.
- */
-
 import {useEffect, useState} from 'react';
 import './RecyclingCenterHome.css';
 import useAuth from "../hooks/use-auth.js";
-import {db} from "../config/firebase-config.js";
-import {collection} from "firebase/firestore";
 import {addBulkMaterial, fetchBulkMaterials} from "../utils/bulk-collection.js";
 
-/**
- * RecyclingCenterHome Component
- * 
- * @returns {JSX.Element} The rendered recycling center dashboard
- */
 const RecyclingCenterHome = () => {
     // State to track the active tab in the sidebar navigation
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -278,7 +263,6 @@ const RecyclingCenterHome = () => {
     useEffect(() => {
         const loadBulks = async () => {
             fetchBulkMaterials();
-            set
         }
         loadBulks()
     }, []);
