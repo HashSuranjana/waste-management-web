@@ -1,78 +1,27 @@
-import React, {useState} from 'react'
+import React, {useCallback, useEffect, useState} from 'react'
+import {addVehicle, deleteVehicle, getVehicles, updateVehicle} from "../../utils/vehicles.js";
 
 const Vehicles = () => {
 
-    const [vehicles, setVehicles] = useState([
-        {
-            id: 'Truck-001',
-            name: 'Truck-001',
-            type: 'Garbage Truck',
-            capacity: '5 tons',
-            licensePlate: 'ABC123',
-            status: 'active',
-            assignedDriver: 'John Driver',
-            wasteType: 'Mixed'
-        },
-        {
-            id: 2,
-            name: 'Van-001',
-            type: 'Recycling Van',
-            capacity: '2 tons',
-            licensePlate: 'DEF456',
-            status: 'Active',
-            lastMaintenance: '2023-03-10',
-            nextMaintenance: '2023-06-10',
-            fuelLevel: '60%',
-            assignedDriver: 'Sarah Driver',
-            wasteType: 'Recyclable'
-        },
-        {
-            id: 3,
-            name: 'Truck-002',
-            type: 'Organic Waste Truck',
-            capacity: '4 tons',
-            licensePlate: 'GHI789',
-            status: 'Maintenance',
-            lastMaintenance: '2023-04-01',
-            nextMaintenance: '2023-07-01',
-            fuelLevel: '30%',
-            assignedDriver: 'Mike Driver',
-            wasteType: 'Organic'
-        },
-        {
-            id: 4,
-            name: 'Van-002',
-            type: 'Recycling Van',
-            capacity: '2 tons',
-            licensePlate: 'JKL012',
-            status: 'Active',
-            lastMaintenance: '2023-03-20',
-            nextMaintenance: '2023-06-20',
-            fuelLevel: '85%',
-            assignedDriver: 'Lisa Driver',
-            wasteType: 'Recyclable'
-        },
-        {
-            id: 5,
-            name: 'Truck-003',
-            type: 'Garbage Truck',
-            capacity: '5 tons',
-            licensePlate: 'MNO345',
-            status: 'Inactive',
-            lastMaintenance: '2023-02-15',
-            nextMaintenance: '2023-05-15',
-            fuelLevel: '10%',
-            assignedDriver: 'Tom Driver',
-            wasteType: 'Mixed'
-        },
-    ]);
+    const [vehicles, setVehicles] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [actionLoadingId, setActionLoadingId] = useState(null);
 
-    /**
-     * Vehicle Statistics
-     *
-     * Summary statistics for the vehicle fleet.
-     * Provides a quick overview of vehicle operational status.
-     */
+    const fetchVehicles = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getVehicles();
+            setVehicles(data);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchVehicles();
+    }, [fetchVehicles]);
+
+
     const vehicleStats = {
         totalVehicles: 5,
         activeVehicles: 3,
@@ -82,7 +31,6 @@ const Vehicles = () => {
 
     const [showNewVehicleForm, setShowNewVehicleForm] = useState(false);
     const [newVehicleData, setNewVehicleData] = useState({
-        id: '',
         vehicleNumber: '',
         type: '',
         capacity: '',
@@ -94,6 +42,18 @@ const Vehicles = () => {
         notes: ''
     });
 
+    const handleNewVehicleAdd = async (vehicle) => {
+        try {
+            setLoading(true);
+            const newVehicle = await addVehicle(vehicle);
+            setVehicles(prev => [...prev, newVehicle]);
+            setShowNewVehicleForm(false);
+            setNewVehicleData({ /* reset fields */ vehicleNumber: '', type: '', capacity: '', fuelLevel: '', status: 'Active', lastMaintenance: '', nextMaintenance: '', assignedDriver: '', notes: '' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleMaintenanceClick = (vehicleId) => {
         setVehicles(vehicles.map(vehicle =>
             vehicle.id === vehicleId
@@ -102,97 +62,51 @@ const Vehicles = () => {
         ));
     };
 
-
-    // Handle new vehicle form input changes
-    const handleNewVehicleChange = (e) => {
-        const { name, value } = e.target;
-        setNewVehicleData({
-            ...newVehicleData,
-            [name]: value
-        });
+    const handleEditVehicleSubmit = async (id, updatedData) => {
+        try {
+            setLoading(true)
+            setActionLoadingId(id);
+            await updateVehicle(id, updatedData);
+            await fetchVehicles();
+            setEditingVehicle(null);
+        } finally {
+            setLoading(false)
+            setActionLoadingId(null);
+        }
     };
 
-    // Handle new vehicle form submission
-    const handleNewVehicleSubmit = () => {
-        const newVehicle = {
-            ...newVehicleData,
-            id: vehicles.length + 1
-        };
-        setVehicles([...vehicles, newVehicle]);
-        setShowNewVehicleForm(false);
-        setNewVehicleData({
-            id: '',
-            vehicleNumber: '',
-            type: '',
-            capacity: '',
-            fuelLevel: '',
-            status: 'Active',
-            lastMaintenance: '',
-            nextMaintenance: '',
-            assignedDriver: '',
-            notes: ''
-        });
+    const handleDeleteVehicle = async (id) => {
+        try {
+            setLoading(true)
+            setActionLoadingId(id);
+            await deleteVehicle(id);
+            setVehicles(prev => prev.filter(v => v.id !== id));
+        } finally {
+            setLoading(false)
+            setActionLoadingId(null);
+        }
     };
+
 
     // Add state for editing vehicles
     const [editingVehicle, setEditingVehicle] = useState(null);
     const [editVehicleForm, setEditVehicleForm] = useState({
-        name: '',
         type: '',
         capacity: '',
-        licensePlate: '',
+        vehicleNumber: '',
         status: '',
         assignedDriver: '',
-        wasteType: ''
     });
 
-    // Handle edit vehicle button click
     const handleEditVehicleClick = (vehicle) => {
         setEditingVehicle(vehicle);
         setEditVehicleForm({
-            name: vehicle.name,
+            vehicleNumber: vehicle.vehicleNumber,
             type: vehicle.type,
             capacity: vehicle.capacity,
-            licensePlate: vehicle.licensePlate,
             status: vehicle.status,
-            assignedDriver: vehicle.assignedDriver,
-            wasteType: vehicle.wasteType
+            assignedDriver: vehicle.assignedDriver
         });
-    };
-
-    // Handle form changes in edit mode
-    const handleEditVehicleChange = (e) => {
-        const { name, value } = e.target;
-        setEditVehicleForm(prevForm => ({
-            ...prevForm,
-            [name]: value
-        }));
-    };
-
-    // Handle edit form submission
-    const handleEditVehicleSubmit = (vehicleId) => {
-        setVehicles(vehicles.map(vehicle =>
-            vehicle.id === vehicleId
-                ? { ...vehicle, ...editVehicleForm }
-                : vehicle
-        ));
-        setEditingVehicle(null);
-        setEditVehicleForm({
-            name: '',
-            type: '',
-            capacity: '',
-            licensePlate: '',
-            status: '',
-            assignedDriver: '',
-            wasteType: ''
-        });
-    };
-
-    // Handle delete vehicle
-    const handleDeleteVehicle = (vehicleId) => {
-        if (window.confirm('Are you sure you want to delete this vehicle?')) {
-            setVehicles(vehicles.filter(vehicle => vehicle.id !== vehicleId));
-        }
     };
     return (
         <div className="vehicles">
@@ -253,7 +167,7 @@ const Vehicles = () => {
                                 type="text"
                                 name="vehicleNumber"
                                 value={newVehicleData.vehicleNumber}
-                                onChange={handleNewVehicleChange}
+                                onChange={(e) => setNewVehicleData({ ...newVehicleData, vehicleNumber: e.target.value })}
                                 className="form-input"
                                 required
                             />
@@ -263,7 +177,7 @@ const Vehicles = () => {
                             <select
                                 name="type"
                                 value={newVehicleData.type}
-                                onChange={handleNewVehicleChange}
+                                onChange={(e) => setNewVehicleData({ ...newVehicleData, type: e.target.value })}
                                 className="form-input"
                                 required
                             >
@@ -279,7 +193,7 @@ const Vehicles = () => {
                                 type="number"
                                 name="capacity"
                                 value={newVehicleData.capacity}
-                                onChange={handleNewVehicleChange}
+                                onChange={(e) => setNewVehicleData({ ...newVehicleData, capacity: e.target.value })}
                                 className="form-input"
                                 required
                             />
@@ -290,7 +204,7 @@ const Vehicles = () => {
                                 type="number"
                                 name="fuelLevel"
                                 value={newVehicleData.fuelLevel}
-                                onChange={handleNewVehicleChange}
+                                onChange={(e) => setNewVehicleData({ ...newVehicleData, fuelLevel: e.target.value })}
                                 className="form-input"
                                 min="0"
                                 max="100"
@@ -302,7 +216,7 @@ const Vehicles = () => {
                             <select
                                 name="status"
                                 value={newVehicleData.status}
-                                onChange={handleNewVehicleChange}
+                                onChange={(e) => setNewVehicleData({ ...newVehicleData, status: e.target.value })}
                                 className="form-input"
                                 required
                             >
@@ -317,7 +231,7 @@ const Vehicles = () => {
                                 type="date"
                                 name="lastMaintenance"
                                 value={newVehicleData.lastMaintenance}
-                                onChange={handleNewVehicleChange}
+                                onChange={(e) => setNewVehicleData({ ...newVehicleData, lastMaintenance: e.target.value })}
                                 className="form-input"
                             />
                         </div>
@@ -327,7 +241,7 @@ const Vehicles = () => {
                                 type="date"
                                 name="nextMaintenance"
                                 value={newVehicleData.nextMaintenance}
-                                onChange={handleNewVehicleChange}
+                                onChange={(e) => setNewVehicleData({ ...newVehicleData, nextMaintenance: e.target.value })}
                                 className="form-input"
                             />
                         </div>
@@ -336,7 +250,7 @@ const Vehicles = () => {
                             <select
                                 name="assignedDriver"
                                 value={newVehicleData.assignedDriver}
-                                onChange={handleNewVehicleChange}
+                                onChange={(e) => setNewVehicleData({ ...newVehicleData, assignedDriver: e.target.value })}
                                 className="form-input"
                             >
                                 <option value="">Select Driver</option>
@@ -350,13 +264,13 @@ const Vehicles = () => {
                             <textarea
                                 name="notes"
                                 value={newVehicleData.notes}
-                                onChange={handleNewVehicleChange}
+                                onChange={(e) => setNewVehicleData({ ...newVehicleData, notes: e.target.value })}
                                 className="form-input"
                             ></textarea>
                         </div>
                     </div>
                     <div className="form-actions">
-                        <button className="action-btn save" onClick={handleNewVehicleSubmit}>Save</button>
+                        <button className="action-btn save" onClick={()=>handleNewVehicleAdd(newVehicleData)}>{loading ? 'Adding...' : 'Add Vehicle'}</button>
                         <button className="action-btn cancel" onClick={() => setShowNewVehicleForm(false)}>Cancel</button>
                     </div>
                 </div>
@@ -369,13 +283,11 @@ const Vehicles = () => {
                     <table className="vehicle-table">
                         <thead>
                         <tr>
-                            <th>Vehicle ID</th>
+                            <th>Vehicle Number</th>
                             <th>Type</th>
                             <th>Capacity</th>
-                            <th>License</th>
                             <th>Status</th>
                             <th>Driver</th>
-                            <th>Waste Type</th>
                             <th>Actions</th>
                         </tr>
                         </thead>
@@ -388,22 +300,25 @@ const Vehicles = () => {
                                             <input
                                                 type="text"
                                                 className="edit-input"
-                                                name="name"
-                                                value={editVehicleForm.name}
-                                                onChange={handleEditVehicleChange}
+                                                name="licensePlate"
+                                                value={editVehicleForm.vehicleNumber}
+                                                onChange={(e) =>setEditVehicleForm({...editVehicleForm, vehicleNumber: e.target.value})}
                                             />
                                         </td>
+
                                         <td>
                                             <select
-                                                className="edit-input"
                                                 name="type"
                                                 value={editVehicleForm.type}
-                                                onChange={handleEditVehicleChange}
+                                                onChange={(e) =>setEditVehicleForm({...editVehicleForm, type: e.target.value})}
+                                                className="edit-input"
                                             >
-                                                <option value="Garbage Truck">Garbage Truck</option>
-                                                <option value="Recycling Van">Recycling Van</option>
-                                                <option value="Compactor">Compactor</option>
+                                                <option value="">Select Type</option>
+                                                <option value="Truck">Truck</option>
+                                                <option value="Van">Van</option>
+                                                <option value="Compact">Compact</option>
                                             </select>
+
                                         </td>
                                         <td>
                                             <input
@@ -411,16 +326,7 @@ const Vehicles = () => {
                                                 className="edit-input"
                                                 name="capacity"
                                                 value={editVehicleForm.capacity}
-                                                onChange={handleEditVehicleChange}
-                                            />
-                                        </td>
-                                        <td>
-                                            <input
-                                                type="text"
-                                                className="edit-input"
-                                                name="licensePlate"
-                                                value={editVehicleForm.licensePlate}
-                                                onChange={handleEditVehicleChange}
+                                                onChange={(e) =>setEditVehicleForm({...editVehicleForm, capacity: e.target.value})}
                                             />
                                         </td>
                                         <td>
@@ -428,7 +334,7 @@ const Vehicles = () => {
                                                 className="edit-input"
                                                 name="status"
                                                 value={editVehicleForm.status}
-                                                onChange={handleEditVehicleChange}
+                                                onChange={(e) =>setEditVehicleForm({...editVehicleForm, status: e.target.value})}
                                             >
                                                 <option value="active">Active</option>
                                                 <option value="maintenance">Maintenance</option>
@@ -436,32 +342,24 @@ const Vehicles = () => {
                                             </select>
                                         </td>
                                         <td>
-                                            <input
-                                                type="text"
-                                                className="edit-input"
+                                            <select
                                                 name="assignedDriver"
                                                 value={editVehicleForm.assignedDriver}
-                                                onChange={handleEditVehicleChange}
-                                            />
-                                        </td>
-                                        <td>
-                                            <select
-                                                className="edit-input"
-                                                name="wasteType"
-                                                value={editVehicleForm.wasteType}
-                                                onChange={handleEditVehicleChange}
+                                                onChange={(e) =>setEditVehicleForm({...editVehicleForm, assignedDriver: e.target.value})}
+                                                className="form-input"
                                             >
-                                                <option value="Mixed">Mixed</option>
-                                                <option value="Recyclable">Recyclable</option>
-                                                <option value="Organic">Organic</option>
+                                                <option value="">Select Driver</option>
+                                                <option value="John Driver">John Driver</option>
+                                                <option value="Sarah Driver">Sarah Driver</option>
+                                                <option value="Mike Driver">Mike Driver</option>
                                             </select>
                                         </td>
                                         <td>
                                             <button
                                                 className="action-btn save"
-                                                onClick={() => handleEditVehicleSubmit(vehicle.id)}
+                                                onClick={() => handleEditVehicleSubmit(vehicle.id,editVehicleForm)}
                                             >
-                                                Save
+                                                {loading ? 'Updating' : 'Update'}
                                             </button>
                                             <button
                                                 className="action-btn cancel"
@@ -473,17 +371,15 @@ const Vehicles = () => {
                                     </>
                                 ) : (
                                     <>
-                                        <td>{vehicle.name}</td>
+                                        <td>{vehicle.vehicleNumber}</td>
                                         <td>{vehicle.type}</td>
                                         <td>{vehicle.capacity}</td>
-                                        <td>{vehicle.licensePlate}</td>
                                         <td>
-                                                                <span className={`status-badge ${vehicle.status}`}>
-                                                                    {vehicle.status}
-                                                                </span>
+                                            <span className={`status-badge ${vehicle.status}`}>
+                                                {vehicle.status}
+                                            </span>
                                         </td>
                                         <td>{vehicle.assignedDriver}</td>
-                                        <td>{vehicle.wasteType}</td>
                                         <td>
                                             <button
                                                 className="action-btn edit"
@@ -495,7 +391,7 @@ const Vehicles = () => {
                                                 className="action-btn delete"
                                                 onClick={() => handleDeleteVehicle(vehicle.id)}
                                             >
-                                                Delete
+                                                {loading ? 'Deleting' : 'Delete'}
                                             </button>
                                             <button
                                                 className={`action-btn maintenance ${vehicle.status === 'maintenance' ? 'active' : ''}`}
