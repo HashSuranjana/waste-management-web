@@ -1,68 +1,25 @@
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
+import {fetchComplaints, updateComplaint} from "../../utils/complaints.js";
+import {format} from 'date-fns';
 
 const Complaint = () => {
-    const [complaints, setComplaints] = useState([
-        {
-            id: 1,
-            residentName: 'John Smith',
-            category: 'Collection Service',
-            title: 'Missed Collection',
-            description: 'The waste collection was not done on the scheduled date. This is the second time this month.',
-            location: '123 Main St',
-            status: 'Pending',
-            date: '2024-03-15',
-            reply: '',
-            updatedAt: '2024-03-15'
-        },
-        {
-            id: 2,
-            residentName: 'Jane Doe',
-            category: 'Vehicle Issue',
-            title: 'Noisy Collection Vehicle',
-            description: 'The collection vehicle is making excessive noise during early morning collections.',
-            location: '456 Oak Ave',
-            status: 'In Progress',
-            date: '2024-03-14',
-            reply: 'We have noted your complaint and will inspect the vehicle for noise issues.',
-            updatedAt: '2024-03-14'
-        },
-        {
-            id: 3,
-            residentName: 'Robert Johnson',
-            category: 'Staff Behavior',
-            title: 'Rude Collection Staff',
-            description: 'The collection staff was rude and unprofessional during the collection.',
-            location: '789 Pine Rd',
-            status: 'Resolved',
-            date: '2024-03-13',
-            reply: 'We apologize for the behavior. The staff member has been counseled and appropriate action has been taken.',
-            updatedAt: '2024-03-13'
-        }
-    ]);
-
+    const [complaints, setComplaints] = useState([]);
     const [editingComplaint, setEditingComplaint] = useState(null);
     const [editComplaintData, setEditComplaintData] = useState({
-        status: '',
-        reply: ''
+        status: 0,
+        reply: '',
+        updated_date: new Date().toISOString().split('T')[0]
     });
 
-    // Handle complaint status and reply update
-    const handleComplaintUpdate = (complaintId) => {
-        setComplaints(prevComplaints =>
-            prevComplaints.map(complaint =>
-                complaint.id === complaintId
-                    ? {
-                        ...complaint,
-                        status: editComplaintData.status,
-                        reply: editComplaintData.reply,
-                        updatedAt: new Date().toISOString().split('T')[0]
-                    }
-                    : complaint
-            )
-        );
-        setEditingComplaint(null);
-        setEditComplaintData({ status: '', reply: '' });
-    };
+    useEffect(() => {
+        const loadData = async () => {
+            const data = await fetchComplaints();
+            setComplaints(data);
+        }
+        loadData()
+        console.log(complaints)
+    }, []);
+
     const [complaintFilters, setComplaintFilters] = useState({
         category: 'all',
         status: 'all',
@@ -78,7 +35,6 @@ const Complaint = () => {
         });
     };
 
-    // Add this function to handle filter changes
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setComplaintFilters(prev => ({
@@ -87,17 +43,32 @@ const Complaint = () => {
         }));
     };
 
-    // Add this function to handle filter button click
-    const handleFilterButtonClick = () => {
-        // The filtered complaints will be automatically updated through the getFilteredComplaints function
-        // This function is here in case you want to add any additional logic when applying filters
-        console.log('Filters applied:', complaintFilters);
+    const handleComplaintUpdate = async (id) => {
+        try {
+            await updateComplaint(id, {
+                status: editComplaintData.status,
+                reply: editComplaintData.reply
+            });
+
+            setComplaints(prevComplaints =>
+                prevComplaints.map(c =>
+                    c.id === id
+                        ? { ...c, status: editComplaintData.status, reply: editComplaintData.reply }
+                        : c
+                )
+            );
+
+            setEditingComplaint(null);
+            setEditComplaintData({ status: 0, reply: '',updated_date: new Date().toISOString().split('T')[0] });
+        } catch (error) {
+            console.error("Failed to update complaint:", error);
+        }
     };
+
     return (
         <div className="complaints">
             <h2>Complaints Management</h2>
 
-            {/* Complaints Filters */}
             <div className="complaints-filters">
                 <select
                     className="filter-select"
@@ -118,9 +89,9 @@ const Complaint = () => {
                     onChange={handleFilterChange}
                 >
                     <option value="all">All Status</option>
-                    <option value="Pending">Pending</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Resolved">Resolved</option>
+                    <option value={0}>Pending</option>
+                    <option value={1}>In Progress</option>
+                    <option value={2}>Resolved</option>
                 </select>
                 <input
                     type="date"
@@ -131,7 +102,6 @@ const Complaint = () => {
                 />
                 <button
                     className="filter-btn"
-                    onClick={handleFilterButtonClick}
                 >
                     Filter
                 </button>
@@ -159,13 +129,9 @@ const Complaint = () => {
                             <td>{complaint.residentName}</td>
                             <td>{complaint.category}</td>
                             <td>{complaint.title}</td>
-                            <td>{complaint.location}</td>
-                            <td>{complaint.date}</td>
-                            <td>
-                                                    <span className={`status-badge ${complaint.status.toLowerCase().replace(' ', '-')}`}>
-                                                        {complaint.status}
-                                                    </span>
-                            </td>
+                            <td>{complaint.postal_code}</td>
+                            <td>{complaint.created_date}</td>
+                            <td>{complaint.status}</td>
                             <td>
                                 <button
                                     className="action-btn view"
@@ -217,9 +183,9 @@ const Complaint = () => {
                                 </p>
                             </div>
                             <div className="detail-row">
-                                <span className="detail-label">Location:</span>
+                                <span className="detail-label">Postal Code:</span>
                                 <span className="detail-value">
-                                                    {complaints.find(c => c.id === editingComplaint)?.location}
+                                                    {complaints.find(c => c.id === editingComplaint)?.postal_code}
                                                 </span>
                             </div>
                         </div>
@@ -235,9 +201,9 @@ const Complaint = () => {
                                     })}
                                     className="form-input"
                                 >
-                                    <option value="Pending">Pending</option>
-                                    <option value="In Progress">In Progress</option>
-                                    <option value="Resolved">Resolved</option>
+                                    <option value={0}>Pending</option>
+                                    <option value={1}>In Progress</option>
+                                    <option value={2}>Resolved</option>
                                 </select>
                             </div>
                             <div className="form-group">
@@ -266,7 +232,7 @@ const Complaint = () => {
                                 className="action-btn cancel"
                                 onClick={() => {
                                     setEditingComplaint(null);
-                                    setEditComplaintData({ status: '', reply: '' });
+                                    setEditComplaintData({ status: 0, reply: '' });
                                 }}
                             >
                                 Cancel
