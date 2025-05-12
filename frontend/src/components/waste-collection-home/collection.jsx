@@ -1,162 +1,72 @@
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
+import {addSchedule, deleteSchedule, fetchSchedules, updateSchedule} from "../../utils/collections.js";
 
 const Collections = () => {
-    /**
-     * Collections Data
-     *
-     * Detailed mock data for all collections, including those in progress.
-     * Contains comprehensive information about each collection operation.
-     */
-    const [collections, setCollections] = useState([
-        {
-            id: 1,
-            location: '123 Main Street',
-            date: '2024-03-15',
-            time: '09:00 AM',
-            status: 'Completed',
-            wasteType: 'Mixed',
-            weight: '250 kg',
-            assignedVehicle: 'Truck-001',
-            assignedDriver: 'John Driver',
-            notes: 'Regular collection completed'
-        },
-        {
-            id: 2,
-            location: '456 Oak Avenue',
-            date: '2024-03-15',
-            time: '10:30 AM',
-            status: 'Pending',
-            wasteType: 'Recyclable',
-            weight: 'N/A',
-            assignedVehicle: 'Van-001',
-            assignedDriver: 'Sarah Driver',
-            notes: 'Scheduled collection'
-        },
-        {
-            id: 3,
-            location: '789 Pine Road',
-            date: '2024-03-15',
-            time: '02:00 PM',
-            status: 'In Progress',
-            wasteType: 'Organic',
-            weight: '180 kg',
-            assignedVehicle: 'Truck-002',
-            assignedDriver: 'Mike Driver',
-            notes: 'Collection in progress'
-        },
-        {
-            id: 4,
-            location: '321 Elm Street',
-            date: '2024-03-16',
-            time: '08:00 AM',
-            status: 'Scheduled',
-            wasteType: 'Mixed',
-            weight: 'N/A',
-            assignedVehicle: 'Truck-001',
-            assignedDriver: 'John Driver',
-            notes: 'Upcoming collection'
-        },
-        {
-            id: 5,
-            location: '654 Maple Drive',
-            date: '2024-03-16',
-            time: '11:00 AM',
-            status: 'Scheduled',
-            wasteType: 'Recyclable',
-            weight: 'N/A',
-            assignedVehicle: 'Van-002',
-            assignedDriver: 'Lisa Driver',
-            notes: 'Upcoming collection'
-        }
-    ]);
 
+    const [collections, setCollections] = useState([]);
     const [showNewCollectionForm, setShowNewCollectionForm] = useState(false);
-    const [editingCollection, setEditingCollection] = useState(null);
     const [newCollectionData, setNewCollectionData] = useState({
         location: '',
         date: '',
         time: '',
         status: 'Scheduled',
         wasteType: 'Mixed',
-        assignedVehicle: ''
+        assignedVehicle: '',
     });
-
-    const collectionStats = {
-        totalCollections: 156,
-        pendingCollections: 23,
-        completedCollections: 133,
-        inProgressCollections: 22,
-        totalWasteCollected: '2,450 kg',
-        recyclingRate: '68%'
-    };
-
-    const handleNewCollectionChange = (e) => {
-        const { name, value } = e.target;
-        setNewCollectionData(prevData => ({
-            ...prevData,
-            [name]: value
-        }));
-    };
-
-    // Handle new collection form submission
-    const handleNewCollectionSubmit = () => {
-        if (!newCollectionData.location || !newCollectionData.date || !newCollectionData.time || !newCollectionData.assignedVehicle) {
-            alert('Please fill in all required fields');
-            return;
-        }
-    }
-
+    const [editingCollection, setEditingCollection] = useState(null);
     const [editFormData, setEditFormData] = useState({
         location: '',
         date: '',
         time: '',
         status: '',
         wasteType: '',
-        weight: '',
         assignedVehicle: '',
-        assignedDriver: '',
-        notes: ''
     });
+    const [searchQuery] = useState('')
+    useEffect(() => {
+        const loadData = async () => {
+            const data = await fetchSchedules();
+            setCollections(data);
+        };
+        loadData();
+    }, []);
 
+    const handleNewCollectionSubmit = async () => {
+        if (!newCollectionData.location || !newCollectionData.date || !newCollectionData.time || !newCollectionData.assignedVehicle) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        const newItem = await addSchedule(newCollectionData);
+        setCollections(prev => [...prev, newItem]);
+        setShowNewCollectionForm(false);
+        setNewCollectionData({ location: '', date: '', time: '', status: 'Scheduled', wasteType: 'Mixed', assignedVehicle: '' });
+    };
     const handleEditClick = (collection) => {
         setEditingCollection(collection.id);
-        setEditFormData({
-            location: collection.location,
-            date: collection.date,
-            time: collection.time,
-            status: collection.status,
-            wasteType: collection.wasteType,
-            weight: collection.weight,
-            assignedVehicle: collection.assignedVehicle,
-            assignedDriver: collection.assignedDriver,
-            notes: collection.notes
-        });
+        setEditFormData({ ...collection });
     };
 
-    // Handle form input changes
-    const handleEditFormChange = (e) => {
-        const { name, value } = e.target;
-        setEditFormData({
-            ...editFormData,
-            [name]: value
-        });
-    };
-
-    // Handle form submission
-    const handleEditFormSubmit = (e) => {
-        e.preventDefault();
-        setCollections(collections.map(collection =>
-            collection.id === editingCollection
-                ? { ...collection, ...editFormData }
-                : collection
-        ));
+    const handleEditFormSubmit = async (id) => {
+        await updateSchedule(id, editFormData);
+        setCollections(prev =>
+            prev.map(c => (c.id === id ? { ...c, ...editFormData } : c))
+        );
         setEditingCollection(null);
     };
 
-    // Handle delete button click
-    const handleDeleteClick = (collectionId) => {
-        setCollections(collections.filter(collection => collection.id !== collectionId));
+    const handleDeleteClick = async (id) => {
+        await deleteSchedule(id);
+        setCollections(prev => prev.filter(c => c.id !== id));
     };
+
+    const filteredCollections = collections.filter(c =>
+        c.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.assignedVehicle.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+
+
 
     return (
         <div className="collections">
@@ -168,7 +78,7 @@ const Collections = () => {
                     <div className="stat-icon">🗑️</div>
                     <div className="stat-info">
                         <h3>Total Collections</h3>
-                        <p className="stat-value">{collectionStats.totalCollections}</p>
+                        <p className="stat-value">{collections.totalCollections}</p>
                     </div>
                 </div>
 
@@ -176,7 +86,7 @@ const Collections = () => {
                     <div className="stat-icon">✅</div>
                     <div className="stat-info">
                         <h3>Completed</h3>
-                        <p className="stat-value">{collectionStats.completedCollections}</p>
+                        <p className="stat-value">{collections.completedCollections}</p>
                     </div>
                 </div>
 
@@ -184,7 +94,7 @@ const Collections = () => {
                     <div className="stat-icon">⏳</div>
                     <div className="stat-info">
                         <h3>Pending</h3>
-                        <p className="stat-value">{collectionStats.pendingCollections}</p>
+                        <p className="stat-value">{collections.pendingCollections}</p>
                     </div>
                 </div>
 
@@ -192,7 +102,7 @@ const Collections = () => {
                     <div className="stat-icon">🔄</div>
                     <div className="stat-info">
                         <h3>In Progress</h3>
-                        <p className="stat-value">{collectionStats.inProgressCollections}</p>
+                        <p className="stat-value">{collections.inProgressCollections}</p>
                     </div>
                 </div>
             </div>
@@ -217,7 +127,7 @@ const Collections = () => {
                                 type="text"
                                 name="location"
                                 value={newCollectionData.location}
-                                onChange={handleNewCollectionChange}
+                                onChange={e => setNewCollectionData({ ...newCollectionData, location: e.target.value })}
                                 className="form-input"
                                 required
                             />
@@ -228,7 +138,7 @@ const Collections = () => {
                                 type="date"
                                 name="date"
                                 value={newCollectionData.date}
-                                onChange={handleNewCollectionChange}
+                                onChange={e => setNewCollectionData({ ...newCollectionData, date: e.target.value })}
                                 className="form-input"
                                 required
                             />
@@ -239,7 +149,7 @@ const Collections = () => {
                                 type="time"
                                 name="time"
                                 value={newCollectionData.time}
-                                onChange={handleNewCollectionChange}
+                                onChange={e => setNewCollectionData({ ...newCollectionData, time: e.target.value })}
                                 className="form-input"
                                 required
                             />
@@ -249,7 +159,7 @@ const Collections = () => {
                             <select
                                 name="wasteType"
                                 value={newCollectionData.wasteType}
-                                onChange={handleNewCollectionChange}
+                                onChange={e => setNewCollectionData({ ...newCollectionData, wasteType: e.target.value })}
                                 className="form-input"
                             >
                                 <option value="Mixed">Mixed</option>
@@ -262,7 +172,7 @@ const Collections = () => {
                             <select
                                 name="assignedVehicle"
                                 value={newCollectionData.assignedVehicle}
-                                onChange={handleNewCollectionChange}
+                                onChange={e => setNewCollectionData({ ...newCollectionData, assignedVehicle: e.target.value })}
                                 className="form-input"
                                 required
                             >
@@ -296,7 +206,7 @@ const Collections = () => {
                     </tr>
                     </thead>
                     <tbody>
-                    {collections.map(collection => (
+                    {filteredCollections.map(collection => (
                         <tr key={collection.id}>
                             {editingCollection === collection.id ? (
                                 <>
@@ -305,7 +215,7 @@ const Collections = () => {
                                             type="text"
                                             name="location"
                                             value={editFormData.location}
-                                            onChange={handleEditFormChange}
+                                            onChange={e => setEditFormData({ ...editFormData, location: e.target.value })}
                                             className="edit-input"
                                         />
                                     </td>
@@ -314,7 +224,7 @@ const Collections = () => {
                                             type="date"
                                             name="date"
                                             value={editFormData.date}
-                                            onChange={handleEditFormChange}
+                                            onChange={e => setEditFormData({ ...editFormData, date: e.target.value })}
                                             className="edit-input"
                                         />
                                     </td>
@@ -323,7 +233,7 @@ const Collections = () => {
                                             type="time"
                                             name="time"
                                             value={editFormData.time}
-                                            onChange={handleEditFormChange}
+                                            onChange={e => setEditFormData({ ...editFormData, time: e.target.value })}
                                             className="edit-input"
                                         />
                                     </td>
@@ -331,7 +241,7 @@ const Collections = () => {
                                         <select
                                             name="status"
                                             value={editFormData.status}
-                                            onChange={handleEditFormChange}
+                                            onChange={e => setEditFormData({ ...editFormData, status: e.target.value })}
                                             className="edit-input"
                                         >
                                             <option value="Scheduled">Scheduled</option>
@@ -344,7 +254,7 @@ const Collections = () => {
                                         <select
                                             name="wasteType"
                                             value={editFormData.wasteType}
-                                            onChange={handleEditFormChange}
+                                            onChange={e => setEditFormData({ ...editFormData, wasteType: e.target.value })}
                                             className="edit-input"
                                         >
                                             <option value="Mixed">Mixed</option>
@@ -356,7 +266,7 @@ const Collections = () => {
                                         <select
                                             name="vehicle"
                                             value={editFormData.vehicle}
-                                            onChange={handleEditFormChange}
+                                            onChange={e => setEditFormData({ ...editFormData, assignedVehicle: e.target.value })}
                                             className="edit-input"
                                         >
                                             <option value="Truck-001">Truck-001</option>
@@ -386,9 +296,9 @@ const Collections = () => {
                                     <td>{collection.date}</td>
                                     <td>{collection.time}</td>
                                     <td>
-                                                            <span className={`status-badge ${collection.status.toLowerCase().replace(' ', '-')}`}>
-                                                                {collection.status}
-                                                            </span>
+                                        <span className={`status-badge ${collection.status.toLowerCase().replace(' ', '-')}`}>
+                                            {collection.status}
+                                        </span>
                                     </td>
                                     <td>{collection.wasteType}</td>
                                     <td>{collection.vehicle}</td>
