@@ -662,7 +662,7 @@ const WasteCollectionHome = () => {
                     {/* Postal Residents Tab */}
                     {activeTab === 'postal-residents' && (
                         <div className="postal-residents-container">
-                            <PostalResidents residents={residents} />
+                            <PostalResidents/>
                         </div>
                     )}
                     {activeTab === 'live-location' && (

@@ -1,32 +1,52 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import './PostalResidents.css';
+import {collection, getDocs,query, where} from "firebase/firestore";
+import {db} from "../config/firebase-config.js";
 
-/**
- * PostalResidents Component
- * 
- * This component displays a list of residents grouped by postal code
- * and allows sending messages to residents in a specific postal code area.
- */
-const PostalResidents = ({ residents }) => {
-    // State for postal code selection and messaging
+
+const PostalResidents = () => {
+    const residentsCollectionRef = collection(db, 'residents');
+    const [postalCodes, setPostalCodes] = useState([]);
     const [selectedPostalCode, setSelectedPostalCode] = useState('');
     const [postalCodeMessage, setPostalCodeMessage] = useState('');
     const [showMessageModal, setShowMessageModal] = useState(false);
+    const [filteredResidents, setFilteredResidents] = useState([]);
 
-    // Function to get unique postal codes from residents
-    const getUniquePostalCodes = () => {
-        return [...new Set(residents.map(resident => resident.postalCode))];
+    useEffect(() => {
+        const fetchPostalCodes = async () => {
+            const snapshot = await getDocs(residentsCollectionRef);
+            const codesSet = new Set();
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.postalCode) {
+                    codesSet.add(data.postalCode);
+                }
+            });
+            setPostalCodes(Array.from(codesSet));
+        };
+
+        fetchPostalCodes();
+    }, []);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const getResidentsByPostalCode = async (postalCode) => {
+        if (!postalCode) return;
+        const q = query(residentsCollectionRef, where("postalCode", "==", postalCode));
+        const snapshot = await getDocs(q);
+        const residents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setFilteredResidents(residents);
     };
 
-    // Function to get residents by postal code
-    const getResidentsByPostalCode = (postalCode) => {
-        return residents.filter(resident => resident.postalCode === postalCode);
-    };
+    useEffect(() => {
+        if (selectedPostalCode) {
+            getResidentsByPostalCode(selectedPostalCode);
+        } else {
+            setFilteredResidents([]);
+        }
+    }, [getResidentsByPostalCode, selectedPostalCode]);
 
-    // Function to handle sending message to residents
+
     const handleSendMessage = () => {
-        // Here you would typically integrate with your backend to send messages
-        // For now, we'll just show an alert
         alert(`Message sent to residents in postal code ${selectedPostalCode}`);
         setShowMessageModal(false);
         setPostalCodeMessage('');
@@ -44,7 +64,7 @@ const PostalResidents = ({ residents }) => {
                     className="postal-code-select"
                 >
                     <option value="">Select Postal Code</option>
-                    {getUniquePostalCodes().map(code => (
+                    {postalCodes.map(code => (
                         <option key={code} value={code}>{code}</option>
                     ))}
                 </select>
@@ -73,7 +93,7 @@ const PostalResidents = ({ residents }) => {
                             </tr>
                         </thead>
                         <tbody>
-                            {getResidentsByPostalCode(selectedPostalCode).map(resident => (
+                            {filteredResidents.map(resident => (
                                 <tr key={resident.id}>
                                     <td>{resident.name}</td>
                                     <td>{resident.address}</td>
