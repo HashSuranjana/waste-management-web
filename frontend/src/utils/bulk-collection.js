@@ -1,7 +1,7 @@
 import {addDoc, collection, getDocs} from "firebase/firestore";
 import {db} from "../config/firebase-config.js";
 
-const bulkCollectionRef = collection(db, "bulkMaterials");
+const bulkCollectionRef = collection(db, "Recycle");
 
 export const addBulkMaterial = async (newBulkData) => {
     return await addDoc(bulkCollectionRef, newBulkData);

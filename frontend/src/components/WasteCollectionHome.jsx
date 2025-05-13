@@ -243,9 +243,6 @@ const WasteCollectionHome = () => {
                         <li className={activeTab === 'live-location' ? 'active' : ''} onClick={() => setActiveTab('live-location')}>
                             <span className="icon">🗺️</span> Live Location
                         </li>
-                        <li className={activeTab === 'settings' ? 'active' : ''} onClick={() => setActiveTab('settings')}>
-                            <span className="icon">⚙️</span> Settings
-                        </li>
                     </ul>
                 </nav>
 
@@ -667,9 +664,6 @@ const WasteCollectionHome = () => {
                     )}
                     {activeTab === 'live-location' && (
                         <LiveLocation/>
-                    )}
-                    {activeTab === 'settings' && (
-                        <Settings/>
                     )}
                 </main>
             </div>
