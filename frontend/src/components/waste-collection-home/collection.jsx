@@ -98,7 +98,7 @@ const Collections = () => {
                     <div className="stat-icon">🗑️</div>
                     <div className="stat-info">
                         <h3>Total Collections</h3>
-                        <p className="stat-value">{collections.totalCollections}</p>
+                        <p className="stat-value">{collections.length}</p>
                     </div>
                 </div>
 
@@ -106,7 +106,7 @@ const Collections = () => {
                     <div className="stat-icon">✅</div>
                     <div className="stat-info">
                         <h3>Completed</h3>
-                        <p className="stat-value">{collections.completedCollections}</p>
+                        <p className="stat-value">{collections.filter(c => c.status === 'Completed').length}</p>
                     </div>
                 </div>
 
@@ -114,7 +114,7 @@ const Collections = () => {
                     <div className="stat-icon">⏳</div>
                     <div className="stat-info">
                         <h3>Pending</h3>
-                        <p className="stat-value">{collections.pendingCollections}</p>
+                        <p className="stat-value">{collections.filter(c => c.status === 'Scheduled').length}</p>
                     </div>
                 </div>
 
@@ -122,10 +122,11 @@ const Collections = () => {
                     <div className="stat-icon">🔄</div>
                     <div className="stat-info">
                         <h3>In Progress</h3>
-                        <p className="stat-value">{collections.inProgressCollections}</p>
+                        <p className="stat-value">{collections.filter(c => c.status === 'In Progress').length}</p>
                     </div>
                 </div>
             </div>
+
 
             {/* Action Bar - Search and Add New Collection */}
             <div className="action-bar">
