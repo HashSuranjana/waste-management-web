@@ -1,9 +1,13 @@
 import React, {useEffect, useState} from 'react'
 import {addSchedule, deleteSchedule, fetchSchedules, updateSchedule} from "../../utils/collections.js";
+import {collection, getDocs, query, where} from "firebase/firestore";
+import {db} from "../../config/firebase-config.js";
 
 const Collections = () => {
+    const vehiclesCollectionRef = collection(db, 'vehicles');
 
     const [collections, setCollections] = useState([]);
+    const [availableVehicles, setAvailableVehicles] = useState([]);
     const [showNewCollectionForm, setShowNewCollectionForm] = useState(false);
     const [newCollectionData, setNewCollectionData] = useState({
         location: '',
@@ -64,9 +68,25 @@ const Collections = () => {
         c.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.assignedVehicle.toLowerCase().includes(searchQuery.toLowerCase())
     );
+    const fetchActiveVehicles = async () => {
+        try {
+            const q = query(vehiclesCollectionRef, where('status', '==', 'active'));
+            const querySnapshot = await getDocs(q);
+            const vehicles = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setAvailableVehicles(vehicles);
+        } catch (error) {
+            console.error("Error fetching vehicles:", error);
+        }
+    };
 
-
-
+    useEffect(() => {
+        if (showNewCollectionForm) {
+            fetchActiveVehicles();
+        }
+    }, [fetchActiveVehicles, showNewCollectionForm]);
 
     return (
         <div className="collections">
@@ -177,9 +197,11 @@ const Collections = () => {
                                 required
                             >
                                 <option value="">Select Vehicle</option>
-                                <option value="Truck-001">Truck-001</option>
-                                <option value="Van-001">Van-001</option>
-                                <option value="Truck-002">Truck-002</option>
+                                {availableVehicles.map(vehicle => (
+                                    <option key={vehicle.id} value={vehicle.vehicleNumber}>
+                                        {vehicle.vehicleNumber}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -264,16 +286,19 @@ const Collections = () => {
                                     </td>
                                     <td className="edit-cell">
                                         <select
-                                            name="vehicle"
-                                            value={editFormData.vehicle}
+                                            name="assignedVehicle"
+                                            value={editFormData.vehicleNumber}
                                             onChange={e => setEditFormData({ ...editFormData, assignedVehicle: e.target.value })}
                                             className="edit-input"
                                         >
-                                            <option value="Truck-001">Truck-001</option>
-                                            <option value="Truck-002">Truck-002</option>
-                                            <option value="Van-001">Van-001</option>
-                                            <option value="Van-002">Van-002</option>
+                                            <option value="">Select Vehicle</option>
+                                            {availableVehicles.map(vehicle => (
+                                                <option key={vehicle.id} value={vehicle.vehicleNumber}>
+                                                    {vehicle.vehicleNumber}
+                                                </option>
+                                            ))}
                                         </select>
+
                                     </td>
                                     <td>
                                         <button
@@ -301,7 +326,7 @@ const Collections = () => {
                                         </span>
                                     </td>
                                     <td>{collection.wasteType}</td>
-                                    <td>{collection.vehicle}</td>
+                                    <td>{collection.vehicleNumber}</td>
                                     <td>
                                         <button
                                             className="action-btn edit"

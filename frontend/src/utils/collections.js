@@ -1,12 +1,5 @@
-import { db } from '../config/firebase-config.js';
-import {
-    collection,
-    addDoc,
-    getDocs,
-    updateDoc,
-    deleteDoc,
-    doc
-} from 'firebase/firestore';
+import {db} from '../config/firebase-config.js';
+import {addDoc, collection, deleteDoc, doc, getDoc, getDocs, updateDoc} from 'firebase/firestore';
 
 const collectionRef = collection(db, "collections");
 
@@ -17,8 +10,32 @@ export const addSchedule = async (data) => {
 
 export const fetchSchedules = async () => {
     const snapshot = await getDocs(collectionRef);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    return await Promise.all(
+        snapshot.docs.map(async (doc) => {
+            const data = doc.data();
+            let vehicleNumber = null;
+
+            if (data.assignedVehicle) {
+                try {
+                    const vehicleSnap = await getDoc(data.assignedVehicle);
+                    if (vehicleSnap.exists()) {
+                        vehicleNumber = vehicleSnap.data().vehicleNumber;
+                    }
+                } catch (error) {
+                    console.error('Error fetching vehicle data:', error);
+                }
+            }
+
+            return {
+                id: doc.id,
+                ...data,
+                vehicleNumber,
+            };
+        })
+    );
 };
+
 
 export const updateSchedule = async (id, updatedData) => {
     const docRef = doc(db, "collections", id);
