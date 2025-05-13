@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useState} from 'react'
 import {addVehicle, deleteVehicle, getVehicles, updateVehicle} from "../../utils/vehicles.js";
 
 const Vehicles = () => {
@@ -21,13 +21,12 @@ const Vehicles = () => {
         fetchVehicles();
     }, [fetchVehicles]);
 
-
-    const vehicleStats = {
-        totalVehicles: 5,
-        activeVehicles: 3,
-        maintenanceVehicles: 1,
-        inactiveVehicles: 1
-    };
+    const vehicleStats = useMemo(() => ({
+        totalVehicles: vehicles.length,
+        activeVehicles: vehicles.filter(v => v.status.toLowerCase() === 'active').length,
+        maintenanceVehicles: vehicles.filter(v => v.status.toLowerCase() === 'maintenance').length,
+        inactiveVehicles: vehicles.filter(v => v.status.toLowerCase() === 'inactive').length
+    }), [vehicles]);
 
     const [showNewVehicleForm, setShowNewVehicleForm] = useState(false);
     const [newVehicleData, setNewVehicleData] = useState({
