@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import './RecyclingCenterHome.css';
 import useAuth from "../hooks/use-auth.js";
-import {addBulkMaterial, fetchBulkMaterials} from "../utils/bulk-collection.js";
+import {fetchBulkMaterials} from "../utils/bulk-collection.js";
 import Material from "./waste-collection-home/recycle-center-home/material.jsx";
 
 const RecyclingCenterHome = () => {
@@ -10,14 +10,61 @@ const RecyclingCenterHome = () => {
     const [showNoteModal, setShowNoteModal] = useState(false);
     const [stepNote, setStepNote] = useState('');
 
-    const recyclingStats = {
-        totalRecycled: '1,250 kg',
-        plasticRecycled: '450 kg',
-        paperRecycled: '350 kg',
-        metalRecycled: '250 kg',
-        glassRecycled: '200 kg',
-        recyclingRate: '75%'
-    };
+    const [recyclingStats, setRecyclingStats] = useState({
+        totalRecycled: '0 kg',
+        plasticRecycled: '0 kg',
+        paperRecycled: '0 kg',
+        metalRecycled: '0 kg',
+        glassRecycled: '0 kg',
+        recyclingRate: '0%',
+    });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const bulks = await fetchBulkMaterials();
+
+                // Filter completed bulks only
+                const completedBulks = bulks.filter(bulk => bulk.status === 2);
+
+                const stats = {
+                    Plastic: 0,
+                    Paper: 0,
+                    Metal: 0,
+                    Glass: 0,
+                };
+
+                let total = 0;
+
+                completedBulks.forEach(bulk => {
+                    const type = bulk.type;
+                    const amount = Number(bulk.quantity) || 0;
+                    if (Object.prototype.hasOwnProperty.call(stats, type)) {
+                        stats[type] += amount;
+                        total += amount;
+                    }
+                });
+
+                const recyclingRate = total > 0 ? '100%' : '0%';
+
+                setRecyclingStats({
+                    totalRecycled: `${total} kg`,
+                    plasticRecycled: `${stats.Plastic} kg`,
+                    paperRecycled: `${stats.Paper} kg`,
+                    metalRecycled: `${stats.Metal} kg`,
+                    glassRecycled: `${stats.Glass} kg`,
+                    recyclingRate,
+                });
+
+            } catch (error) {
+                console.error('Failed to fetch recycling stats:', error);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
+
     const recentRecycling = [
         { id: 1, material: 'Plastic', date: '2024-03-15', weight: '45 kg', status: 'Processed' },
         { id: 2, material: 'Paper', date: '2024-03-15', weight: '32 kg', status: 'Processed' },
