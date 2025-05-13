@@ -5,6 +5,7 @@ import {
     updateBulkStatus,
     updateStepStatus
 } from "../../../utils/bulk-collection.js";
+import {format,isValid } from "date-fns";
 
 const Material = () => {
     const [showNewBulkModal, setShowNewBulkModal] = useState(false);
@@ -180,10 +181,12 @@ const Material = () => {
 
         const step = recyclingProcess.steps.find(s => s.id === stepId);
         const firestoreStatus = newStatus === 'completed' ? 2 : newStatus === 'in-progress' ? 1 : 0;
-
         const stepKey = step.name.toLowerCase().replace(/\s+/g, '');
 
         try {
+            const completedAt = newStatus === 'completed' ? new Date().toISOString() : null;
+
+            // Update the step status in Firestore
             await updateStepStatus(selectedMaterial.id, stepKey, firestoreStatus);
 
             const updatedSteps = recyclingProcess.steps.map(s => {
@@ -191,7 +194,7 @@ const Material = () => {
                     return {
                         ...s,
                         status: newStatus,
-                        completedAt: newStatus === 'completed' ? new Date().toLocaleString() : null
+                        completedAt: completedAt ? new Date(completedAt).toLocaleString() : null
                     };
                 }
                 return s;
@@ -200,34 +203,35 @@ const Material = () => {
             let newCurrentStep = recyclingProcess.currentStep;
             if (newStatus === 'completed' && stepId === recyclingProcess.currentStep) {
                 newCurrentStep = Math.min(stepId + 1, recyclingProcess.steps.length);
-                if (newCurrentStep <= recyclingProcess.steps.length) {
-                    const nextStepIndex = newCurrentStep - 1;
-                    if (updatedSteps[nextStepIndex] && updatedSteps[nextStepIndex].status !== 'completed') {
-                        updatedSteps[nextStepIndex].status = 'in-progress';
-                    }
+                const nextStepIndex = newCurrentStep - 1;
+                if (updatedSteps[nextStepIndex] && updatedSteps[nextStepIndex].status !== 'completed') {
+                    updatedSteps[nextStepIndex].status = 'in-progress';
                 }
             }
 
-            // ✅ 4. If all steps are now completed → update bulk status
+            // Check if all steps are completed
             const allCompleted = updatedSteps.every(s => s.status === 'completed');
             if (allCompleted) {
                 await updateBulkStatus(selectedMaterial.id, 2);
                 console.log("Bulk status updated to completed ✅");
             }
 
-            // ✅ 5. Update local state
+            // 🔄 Update lastUpdated in Firestore (even if not fully complete)
+            await updateBulkStatus(selectedMaterial.id, allCompleted ? 2 : selectedMaterial.status, completedAt);
+
+            // Update local state
             setRecyclingProcess({
                 currentStep: newCurrentStep,
                 steps: updatedSteps
             });
 
-            // ✅ 6. Update recycleMaterials state so overview reflects new status
             setRecycleMaterials(prev =>
                 prev.map(mat => {
                     if (mat.id === selectedMaterial.id) {
                         return {
                             ...mat,
                             status: allCompleted ? 2 : mat.status,
+                            lastUpdated: completedAt,
                             stepsCompletionStatus: {
                                 ...mat.stepsCompletionStatus,
                                 [stepKey]: firestoreStatus
@@ -312,7 +316,9 @@ const Material = () => {
                             <div className="material-details">
                                 <div className="detail-item"><span>Type:</span> {material.type}</div>
                                 <div className="detail-item"><span>Quantity:</span> {material.quantity} kg</div>
-                                <div className="detail-item"><span>Last Updated:</span> {material.lastUpdated || 'N/A'}</div>
+                                <div className="detail-item"><span>Last Updated:</span> {material.lastUpdated && isValid(new Date(material.lastUpdated))
+                                    ? format(new Date(material.lastUpdated), 'yyyy-MM-dd hh:mm')
+                                    : 'N/A'}</div>
                             </div>
                             <p className="material-description">{material.description}</p>
                         </div>

@@ -20,7 +20,11 @@ export const updateStepStatus = async (bulkId, stepName, status) => {
     });
 };
 
-export const updateBulkStatus = async (bulkId, newStatus) => {
-    const bulkRef = doc(db, "recycle", bulkId);
-    await updateDoc(bulkRef, { status: newStatus });
+// utils/bulk-collection.js
+export const updateBulkStatus = async (bulkId, status, lastUpdated = null) => {
+    const docRef = doc(db, 'recycle', bulkId);
+    await updateDoc(docRef, {
+        status,
+        ...(lastUpdated && { lastUpdated }) // only set if provided
+    });
 };
