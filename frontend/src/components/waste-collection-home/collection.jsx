@@ -2,6 +2,7 @@ import React, {useEffect, useState, useMemo} from 'react'
 import {addSchedule, deleteSchedule, fetchSchedules, updateSchedule} from "../../utils/collections.js";
 import {collection, getDocs, query, where} from "firebase/firestore";
 import {db} from "../../config/firebase-config.js";
+import { getVehicles } from "../../utils/vehicles.js";
 
 const Collections = () => {
     const vehiclesCollectionRef = collection(db, 'vehicles');
@@ -24,7 +25,8 @@ const Collections = () => {
         time: '',
         status: '',
         wasteType: '',
-        assignedVehicle: '',
+        vehicleNumber: '',
+        notes: ''
     });
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
@@ -37,6 +39,23 @@ const Collections = () => {
         loadData();
     }, []);
 
+    const fetchActiveVehicles = async () => {
+        try {
+            const vehicles = await getVehicles();
+            const activeVehicles = vehicles.filter(vehicle => 
+                vehicle.status && vehicle.status.toLowerCase() === 'active'
+            );
+            setAvailableVehicles(activeVehicles);
+        } catch (error) {
+            console.error("Error fetching vehicles:", error);
+        }
+    };
+
+    // Fetch available vehicles whenever editing starts or component mounts
+    useEffect(() => {
+        fetchActiveVehicles();
+    }, [editingCollection, showNewCollectionForm]);
+
     const handleNewCollectionSubmit = async () => {
         if (!newCollectionData.location || !newCollectionData.date || !newCollectionData.time || !newCollectionData.assignedVehicle) {
             alert('Please fill in all required fields');
@@ -48,6 +67,7 @@ const Collections = () => {
         setShowNewCollectionForm(false);
         setNewCollectionData({ location: '', date: '', time: '', status: 'Scheduled', wasteType: 'Mixed', assignedVehicle: '' });
     };
+
     const handleEditClick = (collection) => {
         setEditingCollection(collection.id);
         setEditFormData({ ...collection });
@@ -68,33 +88,13 @@ const Collections = () => {
 
     const filteredCollections = useMemo(() => {
         return collections.filter(collection =>
-            collection.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            collection.vehicleNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            collection.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            collection.wasteType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            collection.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            collection.vehicleNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            collection.status?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            collection.wasteType?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (collection.notes && collection.notes.toLowerCase().includes(searchQuery.toLowerCase()))
         );
     }, [collections, searchQuery]);
-
-    const fetchActiveVehicles = async () => {
-        try {
-            const q = query(vehiclesCollectionRef, where('status', '==', 'active'));
-            const querySnapshot = await getDocs(q);
-            const vehicles = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setAvailableVehicles(vehicles);
-        } catch (error) {
-            console.error("Error fetching vehicles:", error);
-        }
-    };
-
-    useEffect(() => {
-        if (showNewCollectionForm) {
-            fetchActiveVehicles();
-        }
-    }, [fetchActiveVehicles, showNewCollectionForm]);
 
     return (
         <div className="collections">
@@ -257,13 +257,19 @@ const Collections = () => {
                                             />
                                         </td>
                                         <td className="edit-cell">
-                                            <input
-                                                type="text"
+                                            <select
                                                 name="vehicleNumber"
-                                                value={editFormData.vehicleNumber}
+                                                value={editFormData.vehicleNumber || ''}
                                                 onChange={e => setEditFormData({ ...editFormData, vehicleNumber: e.target.value })}
                                                 className="edit-input"
-                                            />
+                                            >
+                                                <option value="">Select Vehicle</option>
+                                                {availableVehicles.map(vehicle => (
+                                                    <option key={vehicle.id} value={vehicle.vehicleNumber}>
+                                                        {vehicle.vehicleNumber}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         </td>
                                         <td className="edit-cell">
                                             <select
@@ -294,7 +300,7 @@ const Collections = () => {
                                             <input
                                                 type="text"
                                                 name="notes"
-                                                value={editFormData.notes}
+                                                value={editFormData.notes || ''}
                                                 onChange={e => setEditFormData({ ...editFormData, notes: e.target.value })}
                                                 className="edit-input"
                                             />
