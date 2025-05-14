@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import 'react-calendar/dist/Calendar.css';
 import './WasteCollectionHome.css';
 import PostalResidents from './PostalResidents.jsx';
@@ -14,6 +14,7 @@ import Shop from "./waste-collection-home/shop.jsx";
 import LiveLocation from "./waste-collection-home/live-location.jsx";
 import Settings from "./waste-collection-home/settings.jsx";
 import BulkCollection from "./waste-collection-home/bulk-collection.jsx";
+import { fetchRecyclingStats } from '../utils/recycling.js';
 
 const WasteCollectionHome = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -33,6 +34,49 @@ const WasteCollectionHome = () => {
             { id: 6, name: 'Packaging', status: 'pending', completedAt: null }
         ]
     });
+
+    const [recyclingMaterials, setRecyclingMaterials] = useState([]);
+    const [recyclingStats, setRecyclingStats] = useState({
+        totalMaterials: 0,
+        totalWeight: '0 kg',
+        recyclingRate: '0%',
+        averageProcessingTime: '0 hours',
+        recentRecycling: [],
+        upcomingCollections: [],
+        materialDistribution: []
+    });
+
+    useEffect(() => {
+        const loadRecyclingData = async () => {
+            try {
+                const stats = await fetchRecyclingStats();
+                setRecyclingStats(stats);
+                // Transform recent recycling data into the format expected by the recycling tab
+                const materials = stats.recentRecycling.map((item, index) => ({
+                    id: index + 1,
+                    name: item.material,
+                    category: item.material.split(' ')[0], // Extract category from material name
+                    quantity: item.weight,
+                    status: item.status,
+                    description: `Recent recycling material collected on ${item.date}`,
+                    lastUpdated: item.date,
+                    recyclingCenter: 'N/A', // Default value if not available
+                    processingStatus: {
+                        currentStep: item.status === 'Completed' ? 'Packaging' : 'Collection',
+                        steps: recyclingProcess.steps.map(step => ({
+                            ...step,
+                            status: item.status === 'Completed' ? 'completed' : 'pending'
+                        }))
+                    }
+                }));
+                setRecyclingMaterials(materials);
+            } catch (error) {
+                console.error('Error loading recycling data:', error);
+            }
+        };
+
+        loadRecyclingData();
+    }, []);
 
     // Bulk Collection Data
     const [bulkCollectionRequests] = useState([
@@ -139,32 +183,6 @@ const WasteCollectionHome = () => {
 
         setRecyclingMaterials(updatedMaterials);
     };
-
-    // Add this after the other state declarations
-    const [recyclingMaterials, setRecyclingMaterials] = useState([
-        {
-            id: 1,
-            name: 'Plastic Bottles',
-            category: 'Plastic',
-            quantity: '500 kg',
-            status: 'pending',
-            description: 'Mixed plastic bottles from residential collection',
-            lastUpdated: '2024-03-15 10:30',
-            recyclingCenter: 'Central Recycling Facility',
-            processingStatus: {
-                currentStep: 'Collection',
-                steps: [
-                    { id: 'Collection', status: 'completed', startTime: '2024-03-15 09:00', endTime: '2024-03-15 10:30' },
-                    { id: 'Sorting', status: 'in-progress', startTime: '2024-03-15 10:30', endTime: null },
-                    { id: 'Cleaning', status: 'pending', startTime: null, endTime: null },
-                    { id: 'Processing', status: 'pending', startTime: null, endTime: null },
-                    { id: 'Quality Check', status: 'pending', startTime: null, endTime: null },
-                    { id: 'Packaging', status: 'pending', startTime: null, endTime: null }
-                ]
-            }
-        },
-        // ... existing materials ...
-    ]);
 
     const [showTruckLocation, setShowTruckLocation] = useState(false);
 
@@ -290,6 +308,36 @@ const WasteCollectionHome = () => {
                         <div className="recycling-section">
                             <div className="recycling-controls">
                                 <h2>Recycling Management</h2>
+                                <div className="recycling-stats">
+                                    <div className="stat-card">
+                                        <div className="stat-icon">♻️</div>
+                                        <div className="stat-info">
+                                            <h3>Total Materials</h3>
+                                            <p className="stat-value">{recyclingStats.totalMaterials}</p>
+                                        </div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-icon">⚖️</div>
+                                        <div className="stat-info">
+                                            <h3>Total Weight</h3>
+                                            <p className="stat-value">{recyclingStats.totalWeight}</p>
+                                        </div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-icon">📈</div>
+                                        <div className="stat-info">
+                                            <h3>Recycling Rate</h3>
+                                            <p className="stat-value">{recyclingStats.recyclingRate}</p>
+                                        </div>
+                                    </div>
+                                    <div className="stat-card">
+                                        <div className="stat-icon">⏱️</div>
+                                        <div className="stat-info">
+                                            <h3>Avg. Processing</h3>
+                                            <p className="stat-value">{recyclingStats.averageProcessingTime}</p>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div className="recycling-filters">
                                     <select
                                         value={recyclingFilter}
@@ -341,7 +389,7 @@ const WasteCollectionHome = () => {
                                                         </span>
                                                     </div>
                                                     <div>
-                                                        <strong>Recycling Center:</strong> {material.recyclingCenter}
+                                                        <strong>Recycling Center:</strong> {material.recyclingCenter || 'N/A'}
                                                     </div>
                                                     <div>
                                                         <strong>Current Step:</strong> {material.processingStatus.currentStep}
@@ -361,7 +409,7 @@ const WasteCollectionHome = () => {
                                     {selectedMaterial.processingStatus.steps.map((step) => (
                                         <div key={step.id} className={`process-step ${step.status === 'in-progress' ? 'current' : ''}`}>
                                             <div className="step-header">
-                                                <h3>{step.id}</h3>
+                                                <h3>{step.name}</h3>
                                                 <span className={`status-badge ${step.status}`}>
                                                     {step.status.charAt(0).toUpperCase() + step.status.slice(1)}
                                                 </span>
@@ -379,18 +427,7 @@ const WasteCollectionHome = () => {
                                                         <span className="time-value">{new Date(step.endTime).toLocaleString()}</span>
                                                     </div>
                                                 )}
-                                                {step.startTime && step.endTime && (
-                                                    <div className="time-info">
-                                                        <span className="time-label">Duration:</span>
-                                                        <span className="time-value">
-                                                            {}
-                                                        </span>
-                                                    </div>
-                                                )}
                                             </div>
-                                            <p className="step-description">
-                                                {}
-                                            </p>
                                             <div className="step-actions">
                                                 {step.status === 'pending' && (
                                                     <button
@@ -406,14 +443,6 @@ const WasteCollectionHome = () => {
                                                         onClick={() => handleProcessUpdate(step.id, 'completed')}
                                                     >
                                                         Complete Step
-                                                    </button>
-                                                )}
-                                                {step.status === 'completed' && (
-                                                    <button
-                                                        className="btn-warning"
-                                                        onClick={() => handleProcessUpdate(step.id, 'in-progress')}
-                                                    >
-                                                        Reopen Step
                                                     </button>
                                                 )}
                                             </div>
@@ -440,7 +469,10 @@ const WasteCollectionHome = () => {
                                                         <span className="stat-value">
                                                             {recyclingMaterials
                                                                 .filter(m => m.recyclingCenter === center)
-                                                                .reduce((sum, m) => sum + parseInt(m.quantity), 0)} kg
+                                                                .reduce((sum, m) => {
+                                                                    const weight = parseInt(m.quantity.split(' ')[0]) || 0;
+                                                                    return sum + weight;
+                                                                }, 0)} kg
                                                         </span>
                                                     </div>
                                                 </div>
