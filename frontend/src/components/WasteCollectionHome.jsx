@@ -13,16 +13,16 @@ import Residents from "./waste-collection-home/residents.jsx";
 import Shop from "./waste-collection-home/shop.jsx";
 import LiveLocation from "./waste-collection-home/live-location.jsx";
 import Settings from "./waste-collection-home/settings.jsx";
+import BulkCollection from "./waste-collection-home/bulk-collection.jsx";
 
 const WasteCollectionHome = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
     
     const [recyclingTab, setRecyclingTab] = useState('overview');
     const [recyclingFilter, setRecyclingFilter] = useState('all');
-    const [bulkCollectionTab, setBulkCollectionTab] = useState('requests');
     
     const [selectedMaterial, setSelectedMaterial] = useState(null);
-    const [, setRecyclingProcess] = useState({
+    const [recyclingProcess, setRecyclingProcess] = useState({
         currentStep: 0,
         steps: [
             { id: 1, name: 'Collection', status: 'pending', completedAt: null },
@@ -282,186 +282,7 @@ const WasteCollectionHome = () => {
 
                     {/* Bulk Collection Tab */}
                     {activeTab === 'bulk-collection' && (
-                        <div className="bulk-collection">
-                            <h2>Bulk Waste Collection Management</h2>
-
-                            {/* Bulk Collection Tabs */}
-                            <div className="bulk-collection-tabs">
-                                <button
-                                    className={`bulk-collection-tab ${bulkCollectionTab === 'requests' ? 'active' : ''}`}
-                                    onClick={() => setBulkCollectionTab('requests')}
-                                >
-                                    Requests
-                                </button>
-                                <button
-                                    className={`bulk-collection-tab ${bulkCollectionTab === 'schedule' ? 'active' : ''}`}
-                                    onClick={() => setBulkCollectionTab('schedule')}
-                                >
-                                    Schedule
-                                </button>
-                                <button
-                                    className={`bulk-collection-tab ${bulkCollectionTab === 'history' ? 'active' : ''}`}
-                                    onClick={() => setBulkCollectionTab('history')}
-                                >
-                                    History
-                                </button>
-                            </div>
-
-                            {/* Bulk Collection Content */}
-                            <div className="bulk-collection-content">
-                                {/* Requests Tab */}
-                                {bulkCollectionTab === 'requests' && (
-                                    <div className="requests-section">
-                                        <div className="action-bar">
-                                            <div className="search-bar">
-                                                <input type="text" placeholder="Search requests..." />
-                                                <button className="search-btn">Search</button>
-                                            </div>
-                                        </div>
-
-                                        <table className="data-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Request ID</th>
-                                                    <th>Resident</th>
-                                                    <th>Address</th>
-                                                    <th>Waste Type</th>
-                                                    <th>Request Date</th>
-                                                    <th>Preferred Date</th>
-                                                    <th>Status</th>
-                                                    <th>Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {bulkCollectionRequests.map(request => (
-                                                    <tr key={request.id}>
-                                                        <td>{request.id}</td>
-                                                        <td>{request.residentName}</td>
-                                                        <td>{request.address}</td>
-                                                        <td>{request.wasteType}</td>
-                                                        <td>{request.requestDate}</td>
-                                                        <td>{request.preferredDate}</td>
-                                                        <td>
-                                                            <span className={`status-badge ${request.status.toLowerCase()}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <button className="action-btn view">View</button>
-                                                            {request.status === 'Pending' && (
-                                                                <>
-                                                                    <button className="action-btn confirm">Confirm</button>
-                                                                    <button className="action-btn reject">Reject</button>
-                                                                </>
-                                                            )}
-                                                            {request.status === 'Confirmed' && (
-                                                                <button className="action-btn complete">Complete</button>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
-
-                                {/* Schedule Tab */}
-                                {bulkCollectionTab === 'schedule' && (
-                                    <div className="schedule-section">
-                                        <div className="schedule-controls">
-                                            <div className="date-range">
-                                                <input type="date" />
-                                                <span>to</span>
-                                                <input type="date" />
-                                            </div>
-                                            <button className="filter-btn">Filter</button>
-                                        </div>
-
-                                        <div className="schedule-grid">
-                                            {bulkCollectionRequests
-                                                .filter(request => request.status === 'Confirmed')
-                                                .map(request => (
-                                                    <div key={request.id} className="schedule-card">
-                                                        <div className="schedule-header">
-                                                            <h3>Request #{request.id}</h3>
-                                                            <span className={`status-badge ${request.status.toLowerCase()}`}>
-                                                                {request.status}
-                                                            </span>
-                                                        </div>
-                                                        <div className="schedule-details">
-                                                            <p><strong>Resident:</strong> {request.residentName}</p>
-                                                            <p><strong>Address:</strong> {request.address}</p>
-                                                            <p><strong>Collection Date:</strong> {request.collectionDate}</p>
-                                                            <p><strong>Assigned Vehicle:</strong> {request.assignedVehicle}</p>
-                                                            <p><strong>Assigned Driver:</strong> {request.assignedDriver}</p>
-                                                        </div>
-                                                        <div className="schedule-actions">
-                                                            <button className="action-btn view">View Details</button>
-                                                            <button className="action-btn edit">Edit Schedule</button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* History Tab */}
-                                {bulkCollectionTab === 'history' && (
-                                    <div className="history-section">
-                                        <div className="history-filters">
-                                            <select>
-                                                <option value="all">All Status</option>
-                                                <option value="completed">Completed</option>
-                                                <option value="rejected">Rejected</option>
-                                            </select>
-                                            <input type="date" placeholder="From Date" />
-                                            <input type="date" placeholder="To Date" />
-                                            <button className="filter-btn">Filter</button>
-                                        </div>
-
-                                        <table className="data-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Request ID</th>
-                                                    <th>Resident</th>
-                                                    <th>Address</th>
-                                                    <th>Waste Type</th>
-                                                    <th>Estimated Weight</th>
-                                                    <th>Actual Weight</th>
-                                                    <th>Collection Date</th>
-                                                    <th>Status</th>
-                                                    <th>Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {bulkCollectionRequests
-                                                    .filter(request => request.status === 'Completed' || request.status === 'Rejected')
-                                                    .map(request => (
-                                                        <tr key={request.id}>
-                                                            <td>{request.id}</td>
-                                                            <td>{request.residentName}</td>
-                                                            <td>{request.address}</td>
-                                                            <td>{request.wasteType}</td>
-                                                            <td>{request.estimatedWeight}</td>
-                                                            <td>{request.actualWeight || '-'}</td>
-                                                            <td>{request.collectionDate || '-'}</td>
-                                                            <td>
-                                                                <span className={`status-badge ${request.status.toLowerCase()}`}>
-                                                                    {request.status}
-                                                                </span>
-                                                            </td>
-                                                            <td>
-                                                                <button className="action-btn view">View Details</button>
-                                                                <button className="action-btn print">Print Report</button>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        <BulkCollection/>
                     )}
 
                     {/* Recycling Tab */}
