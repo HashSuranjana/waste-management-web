@@ -9,6 +9,7 @@ const RecyclingCenterHome = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [showNoteModal, setShowNoteModal] = useState(false);
     const [stepNote, setStepNote] = useState('');
+    const [recentRecycling, setRecentRecycling] = useState([]);
 
     const [recyclingStats, setRecyclingStats] = useState({
         totalRecycled: '0 kg',
@@ -64,14 +65,44 @@ const RecyclingCenterHome = () => {
         fetchStats();
     }, []);
 
+    useEffect(() => {
+        const fetchRecent = async () => {
+            const bulks = await fetchBulkMaterials();
+            if (!bulks) return;
 
-    const recentRecycling = [
-        { id: 1, material: 'Plastic', date: '2024-03-15', weight: '45 kg', status: 'Processed' },
-        { id: 2, material: 'Paper', date: '2024-03-15', weight: '32 kg', status: 'Processed' },
-        { id: 3, material: 'Metal', date: '2024-03-14', weight: '28 kg', status: 'Processed' },
-        { id: 4, material: 'Glass', date: '2024-03-14', weight: '15 kg', status: 'Processing' },
-        { id: 5, material: 'Plastic', date: '2024-03-14', weight: '38 kg', status: 'Processing' },
-    ];
+            const fiveDaysAgo = new Date();
+            fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+
+            const recent = bulks
+                .filter(bulk =>
+                    bulk.status === 2 &&
+                    new Date(bulk.lastUpdated?.toDate?.() || bulk.updatedAt) >= fiveDaysAgo
+                )
+                .map(bulk => ({
+                    id: bulk.id,
+                    material: bulk.type,
+                    date: new Date(bulk.lastUpdated?.toDate?.() || bulk.lastUpdated).toISOString().split('T')[0],
+                    weight: `${bulk.amount} kg`,
+                    status: 'Processed'
+                }))
+                .sort((a, b) => new Date(b.date) - new Date(a.date)); // optional: newest first
+
+            setRecentRecycling(recent);
+            console.log(recentRecycling)
+        };
+
+        fetchRecent();
+    }, []);
+
+
+
+    // const recentRecycling = [
+    //     { id: 1, material: 'Plastic', date: '2024-03-15', weight: '45 kg', status: 'Processed' },
+    //     { id: 2, material: 'Paper', date: '2024-03-15', weight: '32 kg', status: 'Processed' },
+    //     { id: 3, material: 'Metal', date: '2024-03-14', weight: '28 kg', status: 'Processed' },
+    //     { id: 4, material: 'Glass', date: '2024-03-14', weight: '15 kg', status: 'Processing' },
+    //     { id: 5, material: 'Plastic', date: '2024-03-14', weight: '38 kg', status: 'Processing' },
+    // ];
 
     const upcomingCollections = [
         { id: 6, location: '987 Cedar Ln', date: '2024-03-16', time: '09:00 AM', material: 'Mixed' },
