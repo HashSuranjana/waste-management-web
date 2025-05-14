@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     addBulkRequest,
     fetchBulkRequests,
@@ -103,11 +103,14 @@ const BulkCollection = () => {
         }
     };
 
-    const filteredRequests = bulkRequests.filter(request =>
-        request.residentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.wasteType.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredRequests = useMemo(() => {
+        return bulkRequests.filter(request =>
+            request.residentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            request.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            request.wasteType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (request.notes && request.notes.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+    }, [bulkRequests, searchQuery]);
 
     return (
         <div className="bulk-collection">

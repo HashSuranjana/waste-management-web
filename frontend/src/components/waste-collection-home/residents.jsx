@@ -1,9 +1,10 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useMemo} from 'react';
 import {addResident, deleteResident, fetchResidents, updateResident} from "../../utils/residents.js";
 
 const Residents = () => {
     const [residents, setResidents] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const loadResidents = async () => {
         setLoading(true);
@@ -76,6 +77,16 @@ const Residents = () => {
         setNewResidentData((prev) => ({ ...prev, [name]: value }));
     };
 
+    const filteredResidents = useMemo(() => {
+        return residents.filter(resident =>
+            resident.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            resident.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            resident.postalCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            resident.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            resident.email.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [residents, searchQuery]);
+
     return (
         <div className="residents">
             <h2>Residents Details</h2>
@@ -84,8 +95,12 @@ const Residents = () => {
                     Add New Resident
                 </button>
                 <div className="search-bar">
-                    <input type="text" placeholder="Search residents..." />
-                    <button className="search-btn">Search</button>
+                    <input 
+                        type="text" 
+                        placeholder="Search residents..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
             </div>
 
@@ -132,7 +147,7 @@ const Residents = () => {
                     </tr>
                     </thead>
                     <tbody>
-                    {residents.map((resident) => (
+                    {filteredResidents.map((resident) => (
                         <tr key={resident.id}>
                             {editingResident?.id === resident.id ? (
                                 <>

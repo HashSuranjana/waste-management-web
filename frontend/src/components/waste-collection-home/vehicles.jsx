@@ -6,6 +6,7 @@ const Vehicles = () => {
     const [vehicles, setVehicles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [actionLoadingId, setActionLoadingId] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const fetchVehicles = useCallback(async () => {
         try {
@@ -107,6 +108,16 @@ const Vehicles = () => {
             assignedDriver: vehicle.assignedDriver
         });
     };
+
+    const filteredVehicles = useMemo(() => {
+        return vehicles.filter(vehicle =>
+            vehicle.vehicleNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            vehicle.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            vehicle.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (vehicle.assignedDriver && vehicle.assignedDriver.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+    }, [vehicles, searchQuery]);
+
     return (
         <div className="vehicles">
             <h2>Vehicle Management</h2>
@@ -150,8 +161,12 @@ const Vehicles = () => {
             <div className="action-bar">
                 <button className="add-btn" onClick={() => setShowNewVehicleForm(true)}>Add New Vehicle</button>
                 <div className="search-bar">
-                    <input type="text" placeholder="Search vehicles..." />
-                    <button className="search-btn">Search</button>
+                    <input 
+                        type="text" 
+                        placeholder="Search vehicles..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
             </div>
 
@@ -279,132 +294,136 @@ const Vehicles = () => {
             <div className="dashboard-card">
                 <h3>Vehicle List</h3>
                 <div className="table-responsive">
-                    <table className="vehicle-table">
-                        <thead>
-                        <tr>
-                            <th>Vehicle Number</th>
-                            <th>Type</th>
-                            <th>Capacity</th>
-                            <th>Status</th>
-                            <th>Driver</th>
-                            <th>Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {vehicles.map(vehicle => (
-                            <tr key={vehicle.id}>
-                                {editingVehicle && editingVehicle.id === vehicle.id ? (
-                                    <>
-                                        <td>
-                                            <input
-                                                type="text"
-                                                className="edit-input"
-                                                name="licensePlate"
-                                                value={editVehicleForm.vehicleNumber}
-                                                onChange={(e) =>setEditVehicleForm({...editVehicleForm, vehicleNumber: e.target.value})}
-                                            />
-                                        </td>
-
-                                        <td>
-                                            <select
-                                                name="type"
-                                                value={editVehicleForm.type}
-                                                onChange={(e) =>setEditVehicleForm({...editVehicleForm, type: e.target.value})}
-                                                className="edit-input"
-                                            >
-                                                <option value="">Select Type</option>
-                                                <option value="Truck">Truck</option>
-                                                <option value="Van">Van</option>
-                                                <option value="Compact">Compact</option>
-                                            </select>
-
-                                        </td>
-                                        <td>
-                                            <input
-                                                type="text"
-                                                className="edit-input"
-                                                name="capacity"
-                                                value={editVehicleForm.capacity}
-                                                onChange={(e) =>setEditVehicleForm({...editVehicleForm, capacity: e.target.value})}
-                                            />
-                                        </td>
-                                        <td>
-                                            <select
-                                                className="edit-input"
-                                                name="status"
-                                                value={editVehicleForm.status}
-                                                onChange={(e) =>setEditVehicleForm({...editVehicleForm, status: e.target.value})}
-                                            >
-                                                <option value="active">Active</option>
-                                                <option value="maintenance">Maintenance</option>
-                                                <option value="inactive">Inactive</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <select
-                                                name="assignedDriver"
-                                                value={editVehicleForm.assignedDriver}
-                                                onChange={(e) =>setEditVehicleForm({...editVehicleForm, assignedDriver: e.target.value})}
-                                                className="form-input"
-                                            >
-                                                <option value="">Select Driver</option>
-                                                <option value="John Driver">John Driver</option>
-                                                <option value="Sarah Driver">Sarah Driver</option>
-                                                <option value="Mike Driver">Mike Driver</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <button
-                                                className="action-btn save"
-                                                onClick={() => handleEditVehicleSubmit(vehicle.id,editVehicleForm)}
-                                            >
-                                                {loading ? 'Updating' : 'Update'}
-                                            </button>
-                                            <button
-                                                className="action-btn cancel"
-                                                onClick={() => setEditingVehicle(null)}
-                                            >
-                                                Cancel
-                                            </button>
-                                        </td>
-                                    </>
-                                ) : (
-                                    <>
-                                        <td>{vehicle.vehicleNumber}</td>
-                                        <td>{vehicle.type}</td>
-                                        <td>{vehicle.capacity}</td>
-                                        <td>
-                                            <span className={`status-badge ${vehicle.status}`}>
-                                                {vehicle.status}
-                                            </span>
-                                        </td>
-                                        <td>{vehicle.assignedDriver}</td>
-                                        <td>
-                                            <button
-                                                className="action-btn edit"
-                                                onClick={() => handleEditVehicleClick(vehicle)}
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                className="action-btn delete"
-                                                onClick={() => handleDeleteVehicle(vehicle.id)}
-                                            >
-                                                {loading ? 'Deleting' : 'Delete'}
-                                            </button>
-                                            <button
-                                                className={`action-btn maintenance ${vehicle.status === 'maintenance' ? 'active' : ''}`}
-                                                onClick={() => handleMaintenanceClick(vehicle.id)}
-                                            >
-                                                Maintenance
-                                            </button>
-                                        </td>
-                                    </>
-                                )}
+                    {loading ? (
+                        <p>Loading...</p>
+                    ) : (
+                        <table className="vehicle-table">
+                            <thead>
+                            <tr>
+                                <th>Vehicle Number</th>
+                                <th>Type</th>
+                                <th>Capacity</th>
+                                <th>Status</th>
+                                <th>Driver</th>
+                                <th>Actions</th>
                             </tr>
-                        ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                            {filteredVehicles.map(vehicle => (
+                                <tr key={vehicle.id}>
+                                    {editingVehicle && editingVehicle.id === vehicle.id ? (
+                                        <>
+                                            <td>
+                                                <input
+                                                    type="text"
+                                                    className="edit-input"
+                                                    name="licensePlate"
+                                                    value={editVehicleForm.vehicleNumber}
+                                                    onChange={(e) =>setEditVehicleForm({...editVehicleForm, vehicleNumber: e.target.value})}
+                                                />
+                                            </td>
+
+                                            <td>
+                                                <select
+                                                    name="type"
+                                                    value={editVehicleForm.type}
+                                                    onChange={(e) =>setEditVehicleForm({...editVehicleForm, type: e.target.value})}
+                                                    className="edit-input"
+                                                >
+                                                    <option value="">Select Type</option>
+                                                    <option value="Truck">Truck</option>
+                                                    <option value="Van">Van</option>
+                                                    <option value="Compact">Compact</option>
+                                                </select>
+
+                                            </td>
+                                            <td>
+                                                <input
+                                                    type="text"
+                                                    className="edit-input"
+                                                    name="capacity"
+                                                    value={editVehicleForm.capacity}
+                                                    onChange={(e) =>setEditVehicleForm({...editVehicleForm, capacity: e.target.value})}
+                                                />
+                                            </td>
+                                            <td>
+                                                <select
+                                                    className="edit-input"
+                                                    name="status"
+                                                    value={editVehicleForm.status}
+                                                    onChange={(e) =>setEditVehicleForm({...editVehicleForm, status: e.target.value})}
+                                                >
+                                                    <option value="active">Active</option>
+                                                    <option value="maintenance">Maintenance</option>
+                                                    <option value="inactive">Inactive</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select
+                                                    name="assignedDriver"
+                                                    value={editVehicleForm.assignedDriver}
+                                                    onChange={(e) =>setEditVehicleForm({...editVehicleForm, assignedDriver: e.target.value})}
+                                                    className="form-input"
+                                                >
+                                                    <option value="">Select Driver</option>
+                                                    <option value="John Driver">John Driver</option>
+                                                    <option value="Sarah Driver">Sarah Driver</option>
+                                                    <option value="Mike Driver">Mike Driver</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <button
+                                                    className="action-btn save"
+                                                    onClick={() => handleEditVehicleSubmit(vehicle.id,editVehicleForm)}
+                                                >
+                                                    {loading ? 'Updating' : 'Update'}
+                                                </button>
+                                                <button
+                                                    className="action-btn cancel"
+                                                    onClick={() => setEditingVehicle(null)}
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </td>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <td>{vehicle.vehicleNumber}</td>
+                                            <td>{vehicle.type}</td>
+                                            <td>{vehicle.capacity}</td>
+                                            <td>
+                                                <span className={`status-badge ${vehicle.status}`}>
+                                                    {vehicle.status}
+                                                </span>
+                                            </td>
+                                            <td>{vehicle.assignedDriver}</td>
+                                            <td>
+                                                <button
+                                                    className="action-btn edit"
+                                                    onClick={() => handleEditVehicleClick(vehicle)}
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    className="action-btn delete"
+                                                    onClick={() => handleDeleteVehicle(vehicle.id)}
+                                                >
+                                                    {loading ? 'Deleting' : 'Delete'}
+                                                </button>
+                                                <button
+                                                    className={`action-btn maintenance ${vehicle.status === 'maintenance' ? 'active' : ''}`}
+                                                    onClick={() => handleMaintenanceClick(vehicle.id)}
+                                                >
+                                                    Maintenance
+                                                </button>
+                                            </td>
+                                        </>
+                                    )}
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
         </div>

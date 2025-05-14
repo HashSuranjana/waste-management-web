@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react'
+import React, {useEffect, useState, useMemo} from 'react'
 import {addSchedule, deleteSchedule, fetchSchedules, updateSchedule} from "../../utils/collections.js";
 import {collection, getDocs, query, where} from "firebase/firestore";
 import {db} from "../../config/firebase-config.js";
@@ -26,7 +26,9 @@ const Collections = () => {
         wasteType: '',
         assignedVehicle: '',
     });
-    const [searchQuery] = useState('')
+    const [searchQuery, setSearchQuery] = useState('');
+    const [loading, setLoading] = useState(false);
+
     useEffect(() => {
         const loadData = async () => {
             const data = await fetchSchedules();
@@ -64,10 +66,16 @@ const Collections = () => {
         setCollections(prev => prev.filter(c => c.id !== id));
     };
 
-    const filteredCollections = collections.filter(c =>
-        c.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.assignedVehicle.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredCollections = useMemo(() => {
+        return collections.filter(collection =>
+            collection.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            collection.vehicleNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            collection.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            collection.wasteType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (collection.notes && collection.notes.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+    }, [collections, searchQuery]);
+
     const fetchActiveVehicles = async () => {
         try {
             const q = query(vehiclesCollectionRef, where('status', '==', 'active'));
@@ -132,8 +140,12 @@ const Collections = () => {
             <div className="action-bar">
                 <button className="add-btn" onClick={() => setShowNewCollectionForm(true)}>Schedule New Collection</button>
                 <div className="search-bar">
-                    <input type="text" placeholder="Search collections..." />
-                    <button className="search-btn">Search</button>
+                    <input 
+                        type="text" 
+                        placeholder="Search collections..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
             </div>
 
@@ -216,138 +228,124 @@ const Collections = () => {
             {/* Collection Schedule Table */}
             <div className="dashboard-card">
                 <h3>Collection Schedule</h3>
-                <table className="data-table">
-                    <thead>
-                    <tr>
-                        <th>Area</th>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Status</th>
-                        <th>Waste Type</th>
-                        <th>Vehicle No.</th>
-                        <th>Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {filteredCollections.map(collection => (
-                        <tr key={collection.id}>
-                            {editingCollection === collection.id ? (
-                                <>
-                                    <td className="edit-cell">
-                                        <input
-                                            type="text"
-                                            name="location"
-                                            value={editFormData.location}
-                                            onChange={e => setEditFormData({ ...editFormData, location: e.target.value })}
-                                            className="edit-input"
-                                        />
-                                    </td>
-                                    <td className="edit-cell">
-                                        <input
-                                            type="date"
-                                            name="date"
-                                            value={editFormData.date}
-                                            onChange={e => setEditFormData({ ...editFormData, date: e.target.value })}
-                                            className="edit-input"
-                                        />
-                                    </td>
-                                    <td className="edit-cell">
-                                        <input
-                                            type="time"
-                                            name="time"
-                                            value={editFormData.time}
-                                            onChange={e => setEditFormData({ ...editFormData, time: e.target.value })}
-                                            className="edit-input"
-                                        />
-                                    </td>
-                                    <td className="edit-cell">
-                                        <select
-                                            name="status"
-                                            value={editFormData.status}
-                                            onChange={e => setEditFormData({ ...editFormData, status: e.target.value })}
-                                            className="edit-input"
-                                        >
-                                            <option value="Scheduled">Scheduled</option>
-                                            <option value="In Progress">In Progress</option>
-                                            <option value="Completed">Completed</option>
-                                            <option value="Cancelled">Cancelled</option>
-                                        </select>
-                                    </td>
-                                    <td className="edit-cell">
-                                        <select
-                                            name="wasteType"
-                                            value={editFormData.wasteType}
-                                            onChange={e => setEditFormData({ ...editFormData, wasteType: e.target.value })}
-                                            className="edit-input"
-                                        >
-                                            <option value="Mixed">Mixed</option>
-                                            <option value="Organic">Organic</option>
-                                            <option value="Recyclable">Recyclable</option>
-                                        </select>
-                                    </td>
-                                    <td className="edit-cell">
-                                        <select
-                                            name="assignedVehicle"
-                                            value={editFormData.vehicleNumber}
-                                            onChange={e => setEditFormData({ ...editFormData, assignedVehicle: e.target.value })}
-                                            className="edit-input"
-                                        >
-                                            <option value="">Select Vehicle</option>
-                                            {availableVehicles.map(vehicle => (
-                                                <option key={vehicle.id} value={vehicle.vehicleNumber}>
-                                                    {vehicle.vehicleNumber}
-                                                </option>
-                                            ))}
-                                        </select>
-
-                                    </td>
-                                    <td>
-                                        <button
-                                            className="action-btn save"
-                                            onClick={() => handleEditFormSubmit(collection.id)}
-                                        >
-                                            Save
-                                        </button>
-                                        <button
-                                            className="action-btn cancel"
-                                            onClick={() => setEditingCollection(null)}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </td>
-                                </>
-                            ) : (
-                                <>
-                                    <td>{collection.location}</td>
-                                    <td>{collection.date}</td>
-                                    <td>{collection.time}</td>
-                                    <td>
-                                        <span className={`status-badge ${collection.status.toLowerCase().replace(' ', '-')}`}>
-                                            {collection.status}
-                                        </span>
-                                    </td>
-                                    <td>{collection.wasteType}</td>
-                                    <td>{collection.vehicleNumber}</td>
-                                    <td>
-                                        <button
-                                            className="action-btn edit"
-                                            onClick={() => handleEditClick(collection)}
-                                        >
-                                            Edit
-                                        </button>
-                                        <button
-                                            className="action-btn delete"
-                                            onClick={() => handleDeleteClick(collection.id)}
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
-                                </>
-                            )}
+                {loading ? (
+                    <p>Loading...</p>
+                ) : (
+                    <table className="data-table">
+                        <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>Vehicle Number</th>
+                            <th>Status</th>
+                            <th>Waste Type</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
                         </tr>
-                    ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                        {filteredCollections.map((collection) => (
+                            <tr key={collection.id}>
+                                {editingCollection === collection.id ? (
+                                    <>
+                                        <td className="edit-cell">
+                                            <input
+                                                type="text"
+                                                name="location"
+                                                value={editFormData.location}
+                                                onChange={e => setEditFormData({ ...editFormData, location: e.target.value })}
+                                                className="edit-input"
+                                            />
+                                        </td>
+                                        <td className="edit-cell">
+                                            <input
+                                                type="text"
+                                                name="vehicleNumber"
+                                                value={editFormData.vehicleNumber}
+                                                onChange={e => setEditFormData({ ...editFormData, vehicleNumber: e.target.value })}
+                                                className="edit-input"
+                                            />
+                                        </td>
+                                        <td className="edit-cell">
+                                            <select
+                                                name="status"
+                                                value={editFormData.status}
+                                                onChange={e => setEditFormData({ ...editFormData, status: e.target.value })}
+                                                className="edit-input"
+                                            >
+                                                <option value="Scheduled">Scheduled</option>
+                                                <option value="In Progress">In Progress</option>
+                                                <option value="Completed">Completed</option>
+                                                <option value="Cancelled">Cancelled</option>
+                                            </select>
+                                        </td>
+                                        <td className="edit-cell">
+                                            <select
+                                                name="wasteType"
+                                                value={editFormData.wasteType}
+                                                onChange={e => setEditFormData({ ...editFormData, wasteType: e.target.value })}
+                                                className="edit-input"
+                                            >
+                                                <option value="Mixed">Mixed</option>
+                                                <option value="Organic">Organic</option>
+                                                <option value="Recyclable">Recyclable</option>
+                                            </select>
+                                        </td>
+                                        <td className="edit-cell">
+                                            <input
+                                                type="text"
+                                                name="notes"
+                                                value={editFormData.notes}
+                                                onChange={e => setEditFormData({ ...editFormData, notes: e.target.value })}
+                                                className="edit-input"
+                                            />
+                                        </td>
+                                        <td>
+                                            <button
+                                                className="action-btn save"
+                                                onClick={() => handleEditFormSubmit(collection.id)}
+                                            >
+                                                Save
+                                            </button>
+                                            <button
+                                                className="action-btn cancel"
+                                                onClick={() => setEditingCollection(null)}
+                                            >
+                                                Cancel
+                                            </button>
+                                        </td>
+                                    </>
+                                ) : (
+                                    <>
+                                        <td>{collection.location}</td>
+                                        <td>{collection.vehicleNumber}</td>
+                                        <td>
+                                            <span className={`status-badge ${collection.status.toLowerCase().replace(' ', '-')}`}>
+                                                {collection.status}
+                                            </span>
+                                        </td>
+                                        <td>{collection.wasteType}</td>
+                                        <td>{collection.notes}</td>
+                                        <td>
+                                            <button
+                                                className="action-btn edit"
+                                                onClick={() => handleEditClick(collection)}
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                className="action-btn delete"
+                                                onClick={() => handleDeleteClick(collection.id)}
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </>
+                                )}
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
         </div>
     )
