@@ -1,29 +1,69 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+import { fetchSchedules } from '../../utils/collections.js';
 
 const Dashboard = () => {
-    const collectionStats = {
-        totalCollections: 156,
-        pendingCollections: 23,
-        completedCollections: 133,
-        inProgressCollections: 22,
-        totalWasteCollected: '2,450 kg',
-        recyclingRate: '68%'
-    };
-    const recentCollections = [
-        { id: 1, location: '123 Main St', date: '2023-04-08', status: 'Completed', wasteType: 'Mixed', weight: '45 kg' },
-        { id: 2, location: '456 Oak Ave', date: '2023-04-07', status: 'Completed', wasteType: 'Organic', weight: '32 kg' },
-        { id: 3, location: '789 Pine Rd', date: '2023-04-07', status: 'Completed', wasteType: 'Recyclable', weight: '28 kg' },
-        { id: 4, location: '321 Elm St', date: '2023-04-06', status: 'Pending', wasteType: 'Mixed', weight: 'N/A' },
-        { id: 5, location: '654 Maple Dr', date: '2023-04-06', status: 'Pending', wasteType: 'Organic', weight: 'N/A' },
-    ];
+    const [collectionStats, setCollectionStats] = useState({
+        totalCollections: 0,
+        pendingCollections: 0,
+        completedCollections: 0,
+        inProgressCollections: 0,
+        totalWasteCollected: '0 kg',
+        recyclingRate: '0%'
+    });
+    const [upcomingCollections, setUpcomingCollections] = useState([]);
+    const [recentCollections, setRecentCollections] = useState([]);
 
-    const upcomingCollections = [
-        { id: 6, location: '987 Cedar Ln', date: '2023-04-09', time: '09:00 AM', wasteType: 'Mixed' },
-        { id: 7, location: '147 Birch St', date: '2023-04-09', time: '10:30 AM', wasteType: 'Recyclable' },
-        { id: 8, location: '258 Willow Ave', date: '2023-04-10', time: '08:00 AM', wasteType: 'Organic' },
-        { id: 9, location: '369 Spruce Rd', date: '2023-04-10', time: '11:00 AM', wasteType: 'Mixed' },
-        { id: 10, location: '741 Fir Dr', date: '2023-04-11', time: '09:30 AM', wasteType: 'Recyclable' },
-    ];
+    useEffect(() => {
+        const loadCollectionData = async () => {
+            try {
+                const collections = await fetchSchedules();
+                
+                // Calculate statistics
+                const completed = collections.filter(c => c.status === 'Completed');
+                const pending = collections.filter(c => c.status === 'Scheduled');
+                const inProgress = collections.filter(c => c.status === 'In Progress');
+                
+                // Calculate total waste collected (assuming weight is stored in format "XX kg")
+                const totalWaste = completed.reduce((total, curr) => {
+                    const weight = curr.weight ? parseInt(curr.weight.split(' ')[0]) : 0;
+                    return total + weight;
+                }, 0);
+                
+                // Calculate recycling rate (assuming wasteType can be 'Recyclable')
+                const recyclableWaste = completed.filter(c => c.wasteType === 'Recyclable').length;
+                const recyclingRate = completed.length > 0 
+                    ? Math.round((recyclableWaste / completed.length) * 100)
+                    : 0;
+
+                setCollectionStats({
+                    totalCollections: collections.length,
+                    pendingCollections: pending.length,
+                    completedCollections: completed.length,
+                    inProgressCollections: inProgress.length,
+                    totalWasteCollected: `${totalWaste} kg`,
+                    recyclingRate: `${recyclingRate}%`
+                });
+
+                // Set recent collections (last 5 completed or pending)
+                const sortedRecent = [...collections]
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .slice(0, 5);
+                setRecentCollections(sortedRecent);
+
+                // Set upcoming collections (next 5 scheduled)
+                const today = new Date();
+                const upcoming = collections
+                    .filter(c => c.status === 'Scheduled' && new Date(c.date) >= today)
+                    .sort((a, b) => new Date(a.date) - new Date(b.date))
+                    .slice(0, 5);
+                setUpcomingCollections(upcoming);
+            } catch (error) {
+                console.error('Error loading collection data:', error);
+            }
+        };
+
+        loadCollectionData();
+    }, []);
 
     return (
         <div className="dashboard">
