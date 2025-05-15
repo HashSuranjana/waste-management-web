@@ -323,7 +323,7 @@ const Collections = () => {
                                 ) : (
                                     <>
                                         <td>{collection.location}</td>
-                                        <td>{collection.vehicleNumber}</td>
+                                        <td>{collection.assignedVehicle}</td>
                                         <td>
                                             <span className={`status-badge ${collection.status.toLowerCase().replace(' ', '-')}`}>
                                                 {collection.status}
