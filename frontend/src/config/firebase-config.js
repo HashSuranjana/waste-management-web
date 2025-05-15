@@ -3,13 +3,13 @@ import {getAuth} from "firebase/auth";
 import {getFirestore} from 'firebase/firestore';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBcaKr5AMbdU-CsqdMR_8Ph17OpC7cbILY",
-    authDomain: "waste-management-web-app.firebaseapp.com",
-    projectId: "waste-management-web-app",
-    storageBucket: "waste-management-web-app.firebasestorage.app",
-    messagingSenderId: "733550957011",
-    appId: "1:733550957011:web:61189037a38630e7099f26",
-    measurementId: "G-6R9T1FM0GW"
+    apiKey: "AIzaSyD9CApePbzdHg6jFqMaKBOCVB7C7G8efgE",
+    authDomain: "wastemanagement-60c33.firebaseapp.com",
+    databaseURL: "https://wastemanagement-60c33-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "wastemanagement-60c33",
+    storageBucket: "wastemanagement-60c33.firebasestorage.app",
+    messagingSenderId: "455331973314",
+    appId: "1:455331973314:web:35c632c0e76475a262535b"
 };
 
 
