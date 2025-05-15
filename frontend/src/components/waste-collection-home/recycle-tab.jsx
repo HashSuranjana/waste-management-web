@@ -120,9 +120,6 @@ const RecycleTab = () => {
                                                         </span>
                                     </div>
                                     <div>
-                                        <strong>Recycling Center:</strong> {material.recyclingCenter}
-                                    </div>
-                                    <div>
                                         <strong>Current Step:</strong> {material.processingStatus.currentStep}
                                     </div>
                                     <div>
