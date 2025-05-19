@@ -14,8 +14,8 @@ const RecyclingCenterHome = () => {
 
     const [recyclingStats, setRecyclingStats] = useState({
         totalMaterials: 0,
-        totalWeight: '0 kg',
-        recyclingRate: '0%',
+        totalWeight: 0,
+        recyclingRate: 0,
         averageProcessingTime: '0 hours',
         materialDistribution: []
     });
@@ -24,8 +24,28 @@ const RecyclingCenterHome = () => {
         const loadRecyclingData = async () => {
             try {
                 const stats = await fetchRecyclingStats();
-                setRecyclingStats(stats);
-                setRecentRecycling(stats.recentRecycling);
+                // Calculate total weight from all materials
+                const totalWeight = stats.recentRecycling.reduce((total, item) => {
+                    const weight = item.quantity ? Number(item.quantity) : 0;
+                    return total + weight;
+                }, 0);
+
+                // Update stats with calculated total weight
+                const updatedStats = {
+                    ...stats,
+                    totalWeight: totalWeight
+                };
+
+                // Filter and update recent recycling to show completed items
+                const updatedRecentRecycling = stats.recentRecycling
+                    .filter(item => item.status === 'Completed' || item.status === 'Recycled')
+                    .map(item => ({
+                        ...item,
+                        weight: `${item.quantity} kg`
+                    }));
+
+                setRecyclingStats(updatedStats);
+                setRecentRecycling(updatedRecentRecycling);
                 setUpcomingCollections(stats.upcomingCollections);
             } catch (error) {
                 console.error('Error loading recycling data:', error);
@@ -94,7 +114,7 @@ const RecyclingCenterHome = () => {
                                     <div className="stat-icon">⚖️</div>
                                     <div className="stat-info">
                                         <h3>Total Weight</h3>
-                                        <p className="stat-value">{recyclingStats.totalWeight}</p>
+                                        <p className="stat-value">{recyclingStats.totalWeight} kg</p>
                                     </div>
                                 </div>
 

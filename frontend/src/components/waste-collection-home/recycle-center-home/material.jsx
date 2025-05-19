@@ -16,7 +16,7 @@ const Material = () => {
     const [newBulkData, setNewBulkData] = useState({
         name: '',
         type: '',
-        quantity: '',
+        quantity: 0,
         description: '',
         status: 1,
         stepsCompletionStatus: {
@@ -87,7 +87,7 @@ const Material = () => {
         const { name, value } = e.target;
         setNewBulkData(prev => ({
             ...prev,
-            [name]: value
+            [name]: name === 'quantity' ? Number(value) : value
         }));
     };
 
@@ -102,13 +102,17 @@ const Material = () => {
 
     const handleNewBulkSubmit = async () => {
         try {
-            await addBulkMaterial(newBulkData);
+            const bulkDataToSubmit = {
+                ...newBulkData,
+                quantity: Number(newBulkData.quantity)
+            };
+            await addBulkMaterial(bulkDataToSubmit);
             alert('New recycling bulk added successfully!');
             setShowNewBulkModal(false);
             setNewBulkData({
                 name: '',
                 type: '',
-                quantity: '',
+                quantity: 0,
                 description: '',
                 status: 1,
                 stepsCompletionStatus: {
@@ -315,7 +319,7 @@ const Material = () => {
                             </div>
                             <div className="material-details">
                                 <div className="detail-item"><span>Type:</span> {material.type}</div>
-                                <div className="detail-item"><span>Quantity:</span> {material.quantity} kg</div>
+                                <div className="detail-item"><span>Quantity:</span> {Number(material.quantity)} kg</div>
                                 <div className="detail-item"><span>Last Updated:</span> {material.lastUpdated && isValid(new Date(material.lastUpdated))
                                     ? format(new Date(material.lastUpdated), 'yyyy-MM-dd hh:mm')
                                     : 'N/A'}</div>
